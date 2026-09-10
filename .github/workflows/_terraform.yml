@@ -1,0 +1,106 @@
+name: _terraform
+
+# Reusable Terraform runner. Each module workflow calls this with its directory
+# name and the action to run. State lives in a per-account S3 bucket that is
+# created on first use (native S3 locking, one state key per module).
+
+on:
+  workflow_call:
+    inputs:
+      module:
+        description: "Module directory (eks | storage-infra | ecs)"
+        required: true
+        type: string
+      action:
+        description: "plan | apply | destroy"
+        required: true
+        type: string
+
+env:
+  TF_VERSION: "1.10.5"
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: tf-${{ inputs.module }}
+      cancel-in-progress: false
+    defaults:
+      run:
+        working-directory: ${{ inputs.module }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Ensure state bucket
+        working-directory: .
+        run: |
+          set -euo pipefail
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          BUCKET="kube-demo-2026-tfstate-${ACCOUNT_ID}"
+          echo "STATE_BUCKET=${BUCKET}" >> "$GITHUB_ENV"
+          if aws s3api head-bucket --bucket "$BUCKET" 2>/dev/null; then
+            echo "State bucket ${BUCKET} already exists."
+          else
+            echo "Creating state bucket ${BUCKET} ..."
+            if [ "$AWS_REGION" = "us-east-1" ]; then
+              aws s3api create-bucket --bucket "$BUCKET"
+            else
+              aws s3api create-bucket --bucket "$BUCKET" \
+                --create-bucket-configuration "LocationConstraint=${AWS_REGION}"
+            fi
+            aws s3api put-bucket-versioning --bucket "$BUCKET" \
+              --versioning-configuration Status=Enabled
+            aws s3api put-public-access-block --bucket "$BUCKET" \
+              --public-access-block-configuration \
+              BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+          fi
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform init
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=${STATE_BUCKET}" \
+            -backend-config="key=${{ inputs.module }}/terraform.tfstate" \
+            -backend-config="region=${AWS_REGION}" \
+            -backend-config="use_lockfile=true"
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform fmt check
+        run: terraform fmt -check -recursive
+        continue-on-error: true
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform ${{ inputs.action }}
+        run: |
+          set -euo pipefail
+          case "${{ inputs.action }}" in
+            plan)
+              terraform plan -input=false -var="aws_profile=" ;;
+            apply)
+              terraform apply -input=false -auto-approve -var="aws_profile=" ;;
+            destroy)
+              terraform destroy -input=false -auto-approve -var="aws_profile=" ;;
+            *)
+              echo "unknown action: ${{ inputs.action }}" >&2; exit 1 ;;
+          esac
+
+      - name: Show outputs
+        if: inputs.action == 'apply'
+        run: terraform output

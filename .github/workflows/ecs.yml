@@ -1,0 +1,27 @@
+name: ecs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ecs/**"
+      - ".github/workflows/ecs.yml"
+      - ".github/workflows/_terraform.yml"
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Terraform action"
+        type: choice
+        options: [plan, apply, destroy]
+        default: apply
+
+permissions:
+  contents: read
+
+jobs:
+  ecs:
+    uses: ./.github/workflows/_terraform.yml
+    with:
+      module: ecs
+      action: ${{ github.event_name == 'workflow_dispatch' && inputs.action || 'apply' }}
+    secrets: inherit
