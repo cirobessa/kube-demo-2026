@@ -1,22 +1,5 @@
-# Terraform
 .terraform/
 .terraform.lock.hcl
-*.tfstate
-*.tfstate.*
-*.tfplan
-plan.tfplan
-crash.log
-crash.*.log
-
-# Terraform variable files (may contain account-specific values)
+terraform.tfstate
+terraform.tfstate.*
 *.tfvars
-!*.tfvars.example
-
-# AWS credentials — NEVER commit
-.aws/
-credentials
-*.pem
-
-# Misc
-*.log
-.DS_Store
