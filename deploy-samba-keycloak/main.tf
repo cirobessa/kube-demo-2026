@@ -74,7 +74,7 @@ resource "aws_instance" "samba_dc1" {
   instance_type        = "t3.medium"
   subnet_id            = var.subnet_az1_id
   vpc_security_group_ids = [aws_security_group.samba_ad_sg.id]
-  tags = { Name = "samba-ad-dc-1" Role = "samba-dc-primary" }
+  tags = { Name = "samba-ad-dc-1", Role = "samba-dc-primary" }
 }
 
 resource "aws_instance" "samba_dc2" {
@@ -82,7 +82,7 @@ resource "aws_instance" "samba_dc2" {
   instance_type        = "t3.medium"
   subnet_id            = var.subnet_az2_id
   vpc_security_group_ids = [aws_security_group.samba_ad_sg.id]
-  tags = { Name = "samba-ad-dc-2" Role = "samba-dc-replica" }
+  tags = { Name = "samba-ad-dc-2", Role = "samba-dc-replica" }
 }
 
 resource "aws_instance" "keycloak" {
@@ -90,7 +90,7 @@ resource "aws_instance" "keycloak" {
   instance_type        = "t3.medium"
   subnet_id            = var.subnet_az1_id
   vpc_security_group_ids = [aws_security_group.keycloak_sg.id]
-  tags = { Name = "keycloak-server" Role = "keycloak-server" }
+  tags = { Name = "keycloak-server", Role = "keycloak-server" }
 }
 
 resource "aws_route53_zone" "private_zone" {
