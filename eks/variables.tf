@@ -34,3 +34,7 @@ variable "instance_types" {
   type    = list(string)
   default = ["t3.medium"]
 }
+variable "cluster_name" {
+  type    = string
+  default = "kube-demo-eks"
+}
