@@ -1,5 +1,5 @@
+# Atualizar com valores do EKS kubectl/terraform output - English
+# Run locally: terraform init && terraform apply, then copy outputs
 name = "storage-efs-demo"
-vpc_id = "vpc-0123456789abcdef0"
-subnet_ids = ["subnet-01111111111111111", "subnet-02222222222222222"]
-ingress_cidr_blocks = ["10.0.0.0/16"]
-encrypted = true
+region = "us-east-1"
+# vpc_id e subnet_ids devem vir do output eks_existing_*
