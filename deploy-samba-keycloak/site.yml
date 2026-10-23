@@ -1,0 +1,2 @@
+# Playbook Samba 4 + Keycloak (sem DNS interno)
+# Uso: ansible-playbook -i inventory/aws_ec2.yml site.yml -u ubuntu --private-key ~/.ssh/key
