@@ -1,4 +1,4 @@
-resource "aws_eks_nodegroup" "fargate" {
+resource "aws_eks_node_group" "fargate" {
   cluster_name    = var.name
   node_group_name = "${var.name}-fargate"
   node_role_arn   = aws_iam_role.node.arn

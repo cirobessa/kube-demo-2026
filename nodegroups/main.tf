@@ -1,4 +1,4 @@
-resource "aws_eks_nodegroup" "this" {
+resource "aws_eks_node_group" "this" {
   cluster_name    = var.name
   node_group_name = "${var.name}-group"
   node_role_arn   = aws_iam_role.node.arn
