@@ -1,5 +1,1 @@
-# EKS resource module - storage-ebs-csi
-# English
-resource "aws_ebs_volume" "course" {
-  name = "storage-ebs-csi"
-}
+resource "aws_ebs_volume" "this" { availability_zone = var.az size = 10 encrypted = true tags = { Name = var.name } }

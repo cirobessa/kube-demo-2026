@@ -1,2 +1,1 @@
-# Module managed-fargate - English
-resource "aws_eks_nodegroup" "this" { name = var.name }
+resource "aws_eks_nodegroup" "fargate" { cluster_name = var.name node_group_name = "${var.name}-fargate" node_role_arn = aws_iam_role.node.arn subnet_ids = var.subnet_ids scaling_config { desired_size = 1 min_size = 0 max_size = 2 } capacity_type = "FARGATE" }

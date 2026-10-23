@@ -1,5 +1,2 @@
-# EKS resource module - conclusion
-# English
-resource "output" "course" {
-  name = "conclusion"
-}
+# Conclusion module — outputs from cluster
+output "status" { value = "complete" }
