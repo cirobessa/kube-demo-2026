@@ -32,3 +32,7 @@ output "kubeconfig_command" {
   description = "Command to point kubectl at this cluster"
   value       = "aws eks update-kubeconfig --name ${module.eks.cluster_name} --region ${var.region} --profile ${var.aws_profile}"
 }
+
+output "eks_existing_vpc_id" { value = data.aws_eks_cluster.existing.resources_vpc_config[0].vpc_id }
+output "eks_existing_subnet_ids" { value = data.aws_eks_cluster.existing.resources_vpc_config[0].subnet_ids }
+output "eks_existing_arn" { value = data.aws_eks_cluster.existing.arn }
