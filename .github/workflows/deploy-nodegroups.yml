@@ -11,4 +11,4 @@ jobs:
     - uses: actions/checkout@v4
     - uses: hashicorp/setup-terraform@v3
     - run: terraform init -backend=false
-    - run: terraform apply -auto-approve
+    - run: terraform apply -auto-approve -var-file=nodegroups/terraform.tfvars
