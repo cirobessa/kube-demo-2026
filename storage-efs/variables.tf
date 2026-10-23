@@ -1,7 +1,9 @@
-variable "name" { type=string }
-variable "vpc_id" { type=string }
-variable "subnet_ids" { type=list(string) }
-variable "ingress_cidr_blocks" { type=list(string) default=["10.0.0.0/16"] }
-variable "encrypted" { type=bool default=true }
-variable "tags" { type=map(string) default={} }
-variable "allowed_security_group_ids" { type=list(string) default=[] }
+variable "name" { type = string }
+variable "vpc_id" { type = string }
+variable "subnet_ids" { type = list(string) }
+variable "ingress_cidr_blocks" { type = list(string) default = ["10.10.0.0/16"] }
+variable "encrypted" { type = bool default = true }
+variable "tags" { type = map(string) default = {} }
+variable "allowed_security_group_ids" { type = list(string) default = [] }
+variable "region" { type = string default = "us-east-1" }
+variable "domain" { type = string default = "ciro.289050431047.realhandsonlabs.net" }
