@@ -1,0 +1,10 @@
+name: Deploy cluster-console Module
+on: [push]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: hashicorp/setup-terraform@v3
+    - run: terraform init -backend=false
+    - run: terraform apply -auto-approve -target=cluster-console
