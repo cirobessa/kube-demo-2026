@@ -1,25 +1,12 @@
 variable "name" {
   type    = string
+  default = "storage-efs"
 }
 variable "vpc_id" {
   type    = string
+  default = "vpc-0458b076218d5f15d"
 }
 variable "subnet_ids" {
   type    = list(string)
-}
-variable "ingress_cidr_blocks" {
-  type    = list(string)
-  default = ["10.10.0.0/16"]
-}
-variable "encrypted" {
-  type    = bool
-  default = true
-}
-variable "tags" {
-  type    = map(string)
-  default = {}
-}
-variable "allowed_security_group_ids" {
-  type    = list(string)
-  default = []
+  default = ["subnet-0eff32e6678035c1b", "subnet-00982afe357bcc225"]
 }
