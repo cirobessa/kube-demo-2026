@@ -109,6 +109,32 @@ jobs:
       - name: Terraform validate
         run: terraform validate
 
+      - name: Reconcile VPC subnet associations
+        if: inputs.action == 'apply'
+        run: |
+          set -euo pipefail
+          if ! terraform state list | grep -q "aws_route_table_association.private"; then
+            echo "Private route table associations missing from state. Clearing stale AWS associations..."
+            SUBNETS=$(aws ec2 describe-subnets \
+              --filters "Name=tag:Name,Values=*kube-demo-eks-private*" \
+              --region "${AWS_REGION}" \
+              --query "Subnets[*].SubnetId" \
+              --output text 2>/dev/null || true)
+            for s in $SUBNETS; do
+              ASSOCS=$(aws ec2 describe-route-tables \
+                --region "${AWS_REGION}" \
+                --filters "Name=association.subnet-id,Values=${s}" \
+                --query "RouteTables[*].Associations[?SubnetId=='${s}'].RouteTableAssociationId" \
+                --output text 2>/dev/null || true)
+              for a in $ASSOCS; do
+                echo "Disassociating stale association $a for subnet $s"
+                aws ec2 disassociate-route-table --region "${AWS_REGION}" --association-id "$a" || true
+              done
+            done
+          fi
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
       - name: Terraform ${{ inputs.action }}
         run: |
           set -euo pipefail

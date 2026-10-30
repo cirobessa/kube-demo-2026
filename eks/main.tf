@@ -4,9 +4,11 @@ resource "aws_kms_key" "eks" {
 }
 
 resource "aws_eks_cluster" "this" {
-  name     = var.cluster_name
-  version  = var.cluster_version
-  role_arn = aws_iam_role.eks_cluster.arn
+  name                          = var.cluster_name
+  version                       = var.cluster_version
+  role_arn                      = aws_iam_role.eks_cluster.arn
+  bootstrap_self_managed_addons = false
+
   vpc_config {
     subnet_ids              = concat(aws_subnet.public[*].id, aws_subnet.private[*].id)
     endpoint_public_access  = true
@@ -26,7 +28,10 @@ resource "aws_eks_cluster" "this" {
   depends_on                = [aws_iam_role_policy_attachment.eks_cluster_policy]
 
   lifecycle {
-    ignore_changes = [encryption_config]
+    ignore_changes = [
+      bootstrap_self_managed_addons,
+      encryption_config,
+    ]
   }
 }
 
