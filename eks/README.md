@@ -9,6 +9,7 @@ VPC + managed Amazon EKS cluster.
 - Core add-ons: CoreDNS, kube-proxy, VPC CNI
 - One managed node group: fixed at 2× `t3.medium`, AL2023 AMI
 - IRSA OIDC provider, and cluster-admin for whoever runs `terraform apply`
+- Prometheus (`prometheus-community/prometheus` Helm chart) in the `monitoring` namespace, in-memory storage (no EBS CSI dependency)
 
 ## Usage
 
@@ -30,6 +31,7 @@ Apply takes ~20-25 min (control plane provisioning dominates).
 | `instance_types`    | `["t3.medium"]`  | Node group instance types           |
 | `node_desired_size` | `2`              | Desired node count (fixed at 2)     |
 | `vpc_cidr`          | `10.0.0.0/16`    | VPC CIDR                            |
+| `region`            | `us-east-1`      | AWS region                          |
 
 ## Outputs
 

@@ -1,1 +1,3 @@
-variable "use_new_vpc" { default = true }
+data "aws_availability_zones" "available" {
+  state = "available"
+}

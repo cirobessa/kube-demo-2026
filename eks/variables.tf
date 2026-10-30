@@ -1,14 +1,22 @@
-variable "name" {
+variable "cluster_name" {
   type    = string
   default = "kube-demo-eks"
 }
-variable "vpc_id" {
+variable "region" {
   type    = string
-  default = "vpc-0458b076218d5f15d"
+  default = "us-east-1"
 }
-variable "subnet_ids" {
+variable "vpc_cidr" {
+  type    = string
+  default = "10.0.0.0/16"
+}
+variable "public_subnet_cidrs" {
   type    = list(string)
-  default = ["subnet-0eff32e6678035c1b", "subnet-00982afe357bcc225"]
+  default = ["10.0.0.0/24", "10.0.1.0/24"]
+}
+variable "private_subnet_cidrs" {
+  type    = list(string)
+  default = ["10.0.10.0/24", "10.0.11.0/24"]
 }
 variable "aws_profile" {
   type    = string
@@ -28,13 +36,9 @@ variable "node_desired_size" {
 }
 variable "cluster_version" {
   type    = string
-  default = "1.29"
+  default = "1.30"
 }
 variable "instance_types" {
   type    = list(string)
   default = ["t3.medium"]
-}
-variable "cluster_name" {
-  type    = string
-  default = "kube-demo-eks"
 }
