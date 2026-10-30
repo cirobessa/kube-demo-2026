@@ -7,7 +7,7 @@ VPC + managed Amazon EKS cluster.
 - A `/16` VPC with 2 public + 2 private subnets across 2 AZs, single NAT gateway
 - An EKS cluster (Kubernetes `1.30` by default), public API endpoint
 - Core add-ons: CoreDNS, kube-proxy, VPC CNI
-- One managed node group: 2× `t3.medium` (min 1 / max 3), AL2023 AMI
+- One managed node group: fixed at 2× `t3.medium`, AL2023 AMI
 - IRSA OIDC provider, and cluster-admin for whoever runs `terraform apply`
 
 ## Usage
@@ -28,7 +28,7 @@ Apply takes ~20-25 min (control plane provisioning dominates).
 | `cluster_name`      | `kube-demo-eks`  | Cluster name                        |
 | `cluster_version`   | `1.30`           | Kubernetes version                  |
 | `instance_types`    | `["t3.medium"]`  | Node group instance types           |
-| `node_desired_size` | `2`              | Desired node count (min 1 / max 3)  |
+| `node_desired_size` | `2`              | Desired node count (fixed at 2)     |
 | `vpc_cidr`          | `10.0.0.0/16`    | VPC CIDR                            |
 
 ## Outputs

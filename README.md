@@ -1,76 +1,71 @@
 # kube-demo-2026
 
-Kubernetes & container infrastructure on AWS, provisioned with Terraform.
-Three self-contained modules, one per directory, each deployable on its own.
+Minimal Amazon EKS cluster on AWS, provisioned with Terraform.
 
-| Directory        | Technology          | What it deploys                                                        |
-|------------------|---------------------|-----------------------------------------------------------------------|
-| [`eks/`](eks/)                 | Amazon EKS          | VPC + managed Kubernetes cluster (`t3.medium` node group)             |
-| [`storage-infra/`](storage-infra/) | Amazon EBS + EFS    | `gp3` block volumes (+ snapshot) and a shared EFS filesystem          |
-| [`ecs/`](ecs/)                 | Amazon ECS (Fargate)| ECS cluster + Fargate service behind an internet-facing ALB          |
+Reduced to the essential module: just the EKS cluster. All course-exercise
+scaffolding (ECR, ECS, storage, cli-setup, cluster-console, load balancer,
+samba/keycloak, managed Fargate, and other incomplete fragments) was removed
+because it was unsafe (CI triggered on every push with `-backend=false`,
+meaning no persisted state) and/or non-functional (broken resource
+references, missing files).
 
-All code is **account-agnostic**: the target account is whatever the configured
-AWS profile points at. `aws_account_id` is accepted as an optional variable for
-tagging / policy scoping but is not required.
+| Directory   | Technology  | What it deploys                                            |
+|-------------|-------------|-------------------------------------------------------------|
+| [`eks/`](eks/) | Amazon EKS  | VPC-attached managed Kubernetes cluster, node group fixed at 2× `t3.medium` |
 
 ## Prerequisites
 
 - Terraform >= 1.5
 - AWS CLI v2, configured with a profile named `kube-demo`
-- `kubectl` (for the EKS module)
+- `kubectl`
+- `eksctl` (optional, for quick add-on/plugin management — e.g. cluster-autoscaler, external-dns — once the cluster is up)
 
 ## 1. Configure credentials
 
 Credentials live only in `~/.aws/` and are never committed.
 
 ```bash
-./credentials-setup.sh          # prompts for key/secret, writes the kube-demo profile
 aws sts get-caller-identity --profile kube-demo
 ```
 
 ## 2. Deploy
 
-Each module is independent. `storage-infra/` and `ecs/` are standalone;
-`eks/` creates the cluster the storage volumes can later be attached to.
-
 ```bash
-# Storage (fast, ~3 min)
-cd storage-infra && terraform init && terraform apply -auto-approve && cd ..
-
-# EKS cluster (slow, ~20-25 min)
 cd eks && terraform init && terraform apply -auto-approve && cd ..
 aws eks update-kubeconfig --name kube-demo-eks --region us-east-1 --profile kube-demo
 kubectl get nodes
-
-# ECS Fargate service (~5 min)
-cd ecs && terraform init && terraform apply -auto-approve && cd ..
-curl "http://$(terraform -chdir=ecs output -raw alb_dns_name)"
 ```
 
-## 3. Tear down
+CI deploys the same module via `.github/workflows/eks.yml`, which calls the
+reusable `.github/workflows/_terraform.yml` (S3 backend with native locking,
+`terraform fmt`/`validate`, and `plan`/`apply`/`destroy` via
+`workflow_dispatch`).
 
-Lab/demo accounts are time-limited and the EKS control plane + ALB bill by the
-hour. Destroy in reverse order when done:
+## 3. Add necessary plugins
+
+With the cluster up, install only what's needed on top of it, e.g.:
 
 ```bash
-cd ecs && terraform destroy -auto-approve && cd ..
-cd eks && terraform destroy -auto-approve && cd ..
-cd storage-infra && terraform destroy -auto-approve && cd ..
+# cluster-autoscaler (via Helm, once IRSA role/policy exist)
+helm install cluster-autoscaler autoscaler/cluster-autoscaler -n kube-system ...
+
+# external-dns (via Helm, once IRSA role/policy exist)
+helm install external-dns external-dns/external-dns -n kube-system ...
 ```
 
-## Global variables
+These are intentionally not pre-baked as Terraform modules here — add them
+when actually needed, scoped to the specific IAM/IRSA permissions required.
 
-| Variable         | Default       | Description                                    |
-|------------------|---------------|-----------------------------------------------|
-| `region`         | `us-east-1`   | AWS region                                     |
-| `aws_profile`    | `kube-demo`   | Local AWS CLI profile to authenticate with     |
-| `aws_account_id` | `""`          | Optional; account id for tags / policy scoping |
-| `environment`    | `demo`        | Environment tag applied to every resource      |
+## 4. Tear down
 
-See each module's `README.md` for module-specific variables and outputs.
+```bash
+cd eks && terraform destroy -auto-approve && cd ..
+```
 
 ## Security notes
 
-- The EKS API endpoint and the ECS ALB are publicly reachable — demo only.
-  In production use private endpoints / HTTPS + WAF.
-- Never commit `~/.aws/`, `*.tfstate`, or `*.tfvars`. `.gitignore` enforces this.
+- The EKS API endpoint is publicly reachable — demo only. In production use
+  private endpoints / HTTPS + WAF.
+- Never commit `~/.aws/`, `*.tfstate`, or `*.tfvars`. `.gitignore` enforces
+  this going forward (pre-existing tracked `terraform.tfstate*`/`*.tfvars`
+  files under `eks/` predate the rule and were left as-is).
