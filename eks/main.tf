@@ -1,3 +1,8 @@
+resource "aws_kms_key" "eks" {
+  description         = "EKS secrets envelope encryption for ${var.cluster_name}"
+  enable_key_rotation = true
+}
+
 resource "aws_eks_cluster" "this" {
   name     = var.cluster_name
   version  = var.cluster_version
@@ -11,7 +16,14 @@ resource "aws_eks_cluster" "this" {
     authentication_mode                         = "API"
     bootstrap_cluster_creator_admin_permissions = true
   }
-  depends_on = [aws_iam_role_policy_attachment.eks_cluster_policy]
+  encryption_config {
+    resources = ["secrets"]
+    provider {
+      key_arn = aws_kms_key.eks.arn
+    }
+  }
+  enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+  depends_on                = [aws_iam_role_policy_attachment.eks_cluster_policy]
 }
 
 resource "aws_iam_role" "eks_cluster" {
