@@ -6,11 +6,14 @@ resource "kubernetes_namespace" "monitoring" {
 }
 
 resource "helm_release" "prometheus" {
-  name       = "prometheus"
-  repository = "https://prometheus-community.github.io/helm-charts"
-  chart      = "prometheus"
-  namespace  = kubernetes_namespace.monitoring.metadata[0].name
-  version    = "25.27.0"
+  name            = "prometheus"
+  repository      = "https://prometheus-community.github.io/helm-charts"
+  chart           = "prometheus"
+  namespace       = kubernetes_namespace.monitoring.metadata[0].name
+  version         = "25.27.0"
+  wait            = false
+  cleanup_on_fail = true
+  force_update    = true
 
   set {
     name  = "server.persistentVolume.enabled"
