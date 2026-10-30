@@ -7,6 +7,11 @@ on:
       - "eks/**"
       - ".github/workflows/eks.yml"
       - ".github/workflows/_terraform.yml"
+  pull_request:
+    paths:
+      - "eks/**"
+      - ".github/workflows/eks.yml"
+      - ".github/workflows/_terraform.yml"
   workflow_dispatch:
     inputs:
       action:
@@ -23,5 +28,5 @@ jobs:
     uses: ./.github/workflows/_terraform.yml
     with:
       module: eks
-      action: ${{ github.event_name == 'workflow_dispatch' && inputs.action || 'apply' }}
+      action: ${{ github.event_name == 'workflow_dispatch' && inputs.action || github.event_name == 'pull_request' && 'plan' || 'apply' }}
     secrets: inherit

@@ -1,5 +1,5 @@
 # Disaster Recovery
 Repo: https://github.com/cirobessa/kube-demo-2026
-VPC: vpc-0458b076218d5f15d
 EKS: kube-demo-eks
-Restaurar: terraform init/apply por módulo.
+VPC: criada pelo próprio módulo eks/ (eks/network.tf) — ver `terraform output vpc_id` após o apply, não é mais um ID fixo.
+Restaurar: terraform init/apply no módulo eks/ (cria VPC + subnets + cluster + node group do zero).
