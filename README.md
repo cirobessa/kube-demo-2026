@@ -11,7 +11,15 @@ references, missing files).
 
 | Directory   | Technology  | What it deploys                                            |
 |-------------|-------------|-------------------------------------------------------------|
-| [`eks/`](eks/) | Amazon EKS  | VPC-attached managed Kubernetes cluster, node group fixed at 2× `t3.medium` |
+| [`eks/`](eks/) | Amazon EKS  | Own VPC (2 public + 2 private subnets, NAT, IGW) + managed Kubernetes cluster + node group (1-3× `t3.medium`, desired 2) |
+
+The `eks/` module owns its own networking (`eks/network.tf`): the cluster
+control plane and node group no longer point at hardcoded subnet IDs from an
+external/deleted module — those IDs went stale (one no longer existed in
+AWS) and broke `terraform apply`. The module also enables control-plane
+encryption (KMS), the 5 standard log types, and an IAM OIDC provider for
+IRSA (so add-ons like cluster-autoscaler/external-dns can use scoped
+IAM roles instead of node-instance-profile-wide permissions).
 
 ## Prerequisites
 
@@ -67,5 +75,6 @@ cd eks && terraform destroy -auto-approve && cd ..
 - The EKS API endpoint is publicly reachable — demo only. In production use
   private endpoints / HTTPS + WAF.
 - Never commit `~/.aws/`, `*.tfstate`, or `*.tfvars`. `.gitignore` enforces
-  this going forward (pre-existing tracked `terraform.tfstate*`/`*.tfvars`
-  files under `eks/` predate the rule and were left as-is).
+  this going forward; the stale `eks/terraform.tfstate` that was previously
+  tracked (leaking the AWS account ID in a public repo) has been removed
+  from version control — the S3 backend is the only state CI ever reads.
