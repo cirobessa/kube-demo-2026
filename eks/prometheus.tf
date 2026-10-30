@@ -21,5 +21,10 @@ resource "helm_release" "prometheus" {
     value = "false"
   }
 
-  depends_on = [aws_eks_node_group.this]
+  depends_on = [
+    aws_eks_node_group.this,
+    aws_eks_addon.vpc_cni,
+    aws_eks_addon.coredns,
+    aws_eks_addon.kube_proxy,
+  ]
 }
