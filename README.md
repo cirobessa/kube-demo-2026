@@ -113,6 +113,7 @@ When an AWS sandbox account expires, follow the deterministic 6-phase sequence b
 
 | Document | Description |
 |---|---|
+| 📦 [**`docs/GUIA-COMPLETO-DE-INSTALACOES-4-REPOSITORIOS.md`**](file:///home/ciro/kube-demo-2026/docs/GUIA-COMPLETO-DE-INSTALACOES-4-REPOSITORIOS.md) | **Guia Completo de Instalações:** Registro exaustivo de todos os componentes, add-ons, manifests, Helm charts, serviços de identidade e CI/CD nos 4 repositórios. |
 | 📐 [**`docs/ARCHITECTURE.md`**](file:///home/ciro/kube-demo-2026/docs/ARCHITECTURE.md) | In-depth architectural blueprint covering VPC subnets, EKS 1.30, node groups, IRSA roles, and security groups. |
 | 🌐 [**`docs/ROUTE53-DYNAMIC-DNS.md`**](file:///home/ciro/kube-demo-2026/docs/ROUTE53-DYNAMIC-DNS.md) | Detailed analysis and implementation of runtime Route 53 zone discovery and service CNAME delegation. |
 | 🚀 [**`DEPLOY-ORDER-RUNBOOK.md`**](file:///home/ciro/kube-demo-2026/DEPLOY-ORDER-RUNBOOK.md) | Zero-to-production execution manual for recreating all 4 tiers from blank AWS credentials in < 20 min. |

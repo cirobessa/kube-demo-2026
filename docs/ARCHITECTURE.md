@@ -93,7 +93,7 @@ flowchart TD
 
 ## 2. Decoupled 4-Tier Repository Model
 
-To ensure maintainability, clear ownership, and isolated blast radiuses, the platform is divided into four autonomous GitHub repositories:
+To ensure maintainability, clear ownership, and isolated blast radiuses, the platform is divided into four autonomous GitHub repositories (for an exhaustive inventory of all installed packages, manifests, and Helm releases, refer to [**`docs/GUIA-COMPLETO-DE-INSTALACOES-4-REPOSITORIOS.md`**](file:///home/ciro/kube-demo-2026/docs/GUIA-COMPLETO-DE-INSTALACOES-4-REPOSITORIOS.md)):
 
 | Tier | Repository | Owner | Technology Stack | Responsibility |
 |---|---|---|---|---|
