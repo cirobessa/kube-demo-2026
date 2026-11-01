@@ -42,3 +42,42 @@ variable "instance_types" {
   type    = list(string)
   default = ["t3.medium"]
 }
+
+# -----------------------------------------------------------------------------
+# Enterprise Tagging & Governance Standards (FinOps & Observability)
+# -----------------------------------------------------------------------------
+variable "environment" {
+  description = "Deployment environment (sandbox, dev, staging, prod)"
+  type        = string
+  default     = "sandbox"
+}
+
+variable "project_name" {
+  description = "Source project name for tracking and cost allocation"
+  type        = string
+  default     = "kube-demo-2026"
+}
+
+variable "cost_center" {
+  description = "Cost center for financial accountability and billing categorization"
+  type        = string
+  default     = "devops-platform-cloud"
+}
+
+variable "cloud_provider" {
+  description = "Target cloud provider identifier"
+  type        = string
+  default     = "aws"
+}
+
+variable "owner" {
+  description = "Team or individual accountable for the resource lifecycle"
+  type        = string
+  default     = "platform-team"
+}
+
+variable "repository" {
+  description = "Source code Git repository URL"
+  type        = string
+  default     = "https://github.com/cirobessa/kube-demo-2026"
+}

@@ -26,6 +26,9 @@ data "aws_iam_policy_document" "s3_csi_assume" {
 resource "aws_iam_role" "s3_csi" {
   name               = "${var.cluster_name}-s3-csi-role"
   assume_role_policy = data.aws_iam_policy_document.s3_csi_assume.json
+  tags = {
+    Name = "${var.cluster_name}-s3-csi-role"
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "s3_csi_policy" {
@@ -61,6 +64,9 @@ data "aws_iam_policy_document" "fluentd_assume" {
 resource "aws_iam_role" "fluentd" {
   name               = "${var.cluster_name}-fluentd-role"
   assume_role_policy = data.aws_iam_policy_document.fluentd_assume.json
+  tags = {
+    Name = "${var.cluster_name}-fluentd-role"
+  }
 }
 
 data "aws_iam_policy_document" "fluentd_cloudwatch" {

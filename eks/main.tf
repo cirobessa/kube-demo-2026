@@ -1,6 +1,9 @@
 resource "aws_kms_key" "eks" {
   description         = "EKS secrets envelope encryption for ${var.cluster_name}"
   enable_key_rotation = true
+  tags = {
+    Name = "${var.cluster_name}-kms-key"
+  }
 }
 
 resource "aws_eks_cluster" "this" {
@@ -27,6 +30,10 @@ resource "aws_eks_cluster" "this" {
   enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
   depends_on                = [aws_iam_role_policy_attachment.eks_cluster_policy]
 
+  tags = {
+    Name = var.cluster_name
+  }
+
   lifecycle {
     ignore_changes = [
       bootstrap_self_managed_addons,
@@ -45,6 +52,9 @@ resource "aws_iam_role" "eks_cluster" {
       Action    = "sts:AssumeRole"
     }]
   })
+  tags = {
+    Name = "${var.cluster_name}-cluster-role"
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
@@ -64,6 +74,12 @@ resource "aws_eks_node_group" "this" {
   }
   instance_types = var.instance_types
   depends_on     = [aws_iam_role_policy_attachment.eks_node_policy, aws_nat_gateway.this]
+
+  tags = {
+    Name                                           = "${var.cluster_name}-nodes"
+    "k8s.io/cluster-autoscaler/enabled"            = "true"
+    "k8s.io/cluster-autoscaler/${var.cluster_name}" = "owned"
+  }
 }
 
 resource "aws_iam_role" "eks_node" {
@@ -76,6 +92,9 @@ resource "aws_iam_role" "eks_node" {
       Action    = "sts:AssumeRole"
     }]
   })
+  tags = {
+    Name = "${var.cluster_name}-node-role"
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "eks_node_policy" {
@@ -98,4 +117,7 @@ resource "aws_iam_openid_connect_provider" "eks" {
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = [data.tls_certificate.eks.certificates[0].sha1_fingerprint]
   url             = aws_eks_cluster.this.identity[0].oidc[0].issuer
+  tags = {
+    Name = "${var.cluster_name}-oidc-provider"
+  }
 }
