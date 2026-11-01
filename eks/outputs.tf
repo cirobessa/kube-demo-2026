@@ -22,3 +22,26 @@ output "prometheus_service_url" {
 output "kubeconfig_command" {
   value = "aws eks update-kubeconfig --name ${aws_eks_cluster.this.name} --region ${var.region}"
 }
+
+# -----------------------------------------------------------------------------
+# Route 53 Auto-Discovery, AWS Account & ACM SSL/TLS Outputs
+# -----------------------------------------------------------------------------
+output "aws_account_id" {
+  description = "Auto-discovered AWS Account ID"
+  value       = local.aws_account_id
+}
+
+output "route53_lab_domain" {
+  description = "Auto-discovered Route 53 ephemeral lab domain"
+  value       = local.lab_domain
+}
+
+output "route53_lab_zone_id" {
+  description = "Auto-discovered Route 53 public hosted zone ID"
+  value       = local.lab_zone_id
+}
+
+output "acm_certificate_arn" {
+  description = "Issued and validated ACM Wildcard SSL/TLS certificate ARN for HTTPS Load Balancers"
+  value       = local.has_lab_zone ? aws_acm_certificate.lab_cert[0].arn : ""
+}

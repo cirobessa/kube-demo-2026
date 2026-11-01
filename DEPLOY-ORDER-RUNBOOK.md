@@ -66,6 +66,7 @@ gh workflow run eks.yml -R cirobessa/kube-demo-2026 -f action=apply
 > - Amazon EKS Managed Cluster (v1.30) and Managed Node Group (2x `t3.medium` workers).
 > - EKS Add-ons (`vpc-cni`, `coredns`, `kube-proxy`, `eks-pod-identity-agent`, `metrics-server`, `aws-mountpoint-s3-csi-driver`).
 > - Prometheus Community Helm chart (v25.27.0) in the `monitoring` namespace.
+> - **Route 53 & AWS ACM SSL/TLS:** Auto-descobre a conta AWS e a Hosted Zone (`*realhandsonlabs.net`), solicita o certificado Wildcard (`*.${domain}`) no AWS ACM e valida via DNS CNAME para habilitar HTTPS (porta 443) nos Load Balancers.
 > - Estimated runtime: ~12 minutes.
 
 ---
