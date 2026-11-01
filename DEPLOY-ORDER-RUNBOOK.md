@@ -93,6 +93,14 @@ gh auth switch -u cirodasilvaj
 gh workflow run deploy.yml -R cirodasilvaj/samba-ad-keycloak -f action=apply
 ```
 
+> **Note on Route 53 DNS & VPC Integration:**
+> - Provisions EC2 instances (`samba_dc1`, `samba_dc2`, `keycloak`) directly inside the **EKS cluster VPC private subnets**.
+> - Auto-discovers the lab's Route 53 hosted zone and registers:
+>   - `ldap://ad.<lab-id>.realhandsonlabs.net:389` (Round-Robin DC1 & DC2)
+>   - `http://sso.<lab-id>.realhandsonlabs.net` / `http://keycloak.<lab-id>.realhandsonlabs.net`
+>   - `radius.<lab-id>.realhandsonlabs.net:1812` (MFA)
+> - Outputs complete DNS connection strings and summary in the GitHub Actions step.
+
 ---
 
 ## Phase 5 — Demo Web Applications (Python & .NET C#) and QA/SonarQube CI/CD Pipeline (`cirodasilvaj/apps-demo-2026`)
@@ -101,3 +109,11 @@ gh workflow run deploy.yml -R cirodasilvaj/samba-ad-keycloak -f action=apply
 gh auth switch -u cirodasilvaj
 gh workflow run build.yml -R cirodasilvaj/apps-demo-2026
 ```
+
+> **Note on Route 53 DNS & Backstage Integration:**
+> - Builds and deploys the Python Flask & .NET 8 C# sample microservices to EKS.
+> - Auto-discovers the lab's Route 53 zone and assigns friendly CNAME records:
+>   - `http://python.<lab-id>.realhandsonlabs.net`
+>   - `http://dotnet.<lab-id>.realhandsonlabs.net`
+> - Automatically displays live URLs in the Step Summary and catalogs them in Backstage.
+
