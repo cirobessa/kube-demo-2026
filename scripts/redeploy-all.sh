@@ -110,28 +110,31 @@ echo -e "${CYAN}Sincronizando secrets do GitHub Actions...${NC}"
 
 if command -v gh >/dev/null 2>&1; then
   # Repositório cirobessa/kube-demo-2026
-  if gh auth switch -u cirobessa 2>/dev/null; then
-    echo -e "Atualizando secrets em ${BOLD}cirobessa/kube-demo-2026${NC}..."
-    gh secret set AWS_ACCESS_KEY_ID -b "${ACCESS_KEY}" -R cirobessa/kube-demo-2026 2>/dev/null || true
-    gh secret set AWS_SECRET_ACCESS_KEY -b "${SECRET_KEY}" -R cirobessa/kube-demo-2026 2>/dev/null || true
-    gh secret set AWS_REGION -b "${REGION}" -R cirobessa/kube-demo-2026 2>/dev/null || true
-    if [ -n "${SESSION_TOKEN}" ]; then
-      gh secret set AWS_SESSION_TOKEN -b "${SESSION_TOKEN}" -R cirobessa/kube-demo-2026 2>/dev/null || true
-    fi
+  echo -e "Atualizando secrets em ${BOLD}cirobessa/kube-demo-2026${NC}..."
+  gh auth switch -u cirobessa 2>/dev/null || true
+  gh secret set AWS_ACCESS_KEY_ID -b "${ACCESS_KEY}" -R cirobessa/kube-demo-2026
+  gh secret set AWS_SECRET_ACCESS_KEY -b "${SECRET_KEY}" -R cirobessa/kube-demo-2026
+  gh secret set AWS_REGION -b "${REGION}" -R cirobessa/kube-demo-2026
+  if [ -n "${SESSION_TOKEN}" ]; then
+    gh secret set AWS_SESSION_TOKEN -b "${SESSION_TOKEN}" -R cirobessa/kube-demo-2026
+  else
+    gh secret set AWS_SESSION_TOKEN -b "" -R cirobessa/kube-demo-2026 2>/dev/null || true
   fi
 
   # Repositórios cirodasilvaj/*
-  if gh auth switch -u cirodasilvaj 2>/dev/null; then
-    for repo in cirodasilvaj/backstage-infra cirodasilvaj/samba-ad-keycloak cirodasilvaj/apps-demo-2026; do
-      echo -e "Atualizando secrets em ${BOLD}${repo}${NC}..."
-      gh secret set AWS_ACCESS_KEY_ID -b "${ACCESS_KEY}" -R "${repo}" 2>/dev/null || true
-      gh secret set AWS_SECRET_ACCESS_KEY -b "${SECRET_KEY}" -R "${repo}" 2>/dev/null || true
-      gh secret set AWS_REGION -b "${REGION}" -R "${repo}" 2>/dev/null || true
-      if [ -n "${SESSION_TOKEN}" ]; then
-        gh secret set AWS_SESSION_TOKEN -b "${SESSION_TOKEN}" -R "${repo}" 2>/dev/null || true
-      fi
-    done
-  fi
+  echo -e "Atualizando secrets em repositórios da conta ${BOLD}cirodasilvaj${NC}..."
+  gh auth switch -u cirodasilvaj 2>/dev/null || true
+  for repo in cirodasilvaj/backstage-infra cirodasilvaj/samba-ad-keycloak cirodasilvaj/apps-demo-2026; do
+    echo -e "  -> ${repo}..."
+    gh secret set AWS_ACCESS_KEY_ID -b "${ACCESS_KEY}" -R "${repo}"
+    gh secret set AWS_SECRET_ACCESS_KEY -b "${SECRET_KEY}" -R "${repo}"
+    gh secret set AWS_REGION -b "${REGION}" -R "${repo}"
+    if [ -n "${SESSION_TOKEN}" ]; then
+      gh secret set AWS_SESSION_TOKEN -b "${SESSION_TOKEN}" -R "${repo}"
+    else
+      gh secret set AWS_SESSION_TOKEN -b "" -R "${repo}" 2>/dev/null || true
+    fi
+  done
   echo -e "${GREEN}✓ Secrets do GitHub Actions sincronizados.${NC}"
 else
   echo -e "${YELLOW}Aviso: GitHub CLI ('gh') não encontrado; pulando sincronização de secrets no GitHub.${NC}"
@@ -153,9 +156,18 @@ if [ "${EXEC_MODE}" = "ci" ]; then
   gh auth switch -u cirobessa 2>/dev/null || true
   gh workflow run eks.yml -R cirobessa/kube-demo-2026 -f action=apply
 
-  echo -e "${YELLOW}Aguardando início do workflow do EKS...${NC}"
-  sleep 10
-  RUN_ID=$(gh run list -R cirobessa/kube-demo-2026 -W eks.yml -L 1 --json databaseId -q '.[0].databaseId')
+  echo -e "${YELLOW}Aguardando início do novo workflow do EKS...${NC}"
+  RUN_ID=""
+  for i in $(seq 1 12); do
+    sleep 5
+    RUN_ID=$(gh run list -R cirobessa/kube-demo-2026 -W eks.yml -L 1 --json databaseId,status -q '.[] | select(.status != "completed") | .databaseId' 2>/dev/null || true)
+    if [ -n "${RUN_ID}" ]; then
+      break
+    fi
+  done
+  if [ -z "${RUN_ID}" ]; then
+    RUN_ID=$(gh run list -R cirobessa/kube-demo-2026 -W eks.yml -L 1 --json databaseId -q '.[0].databaseId')
+  fi
   echo -e "Acompanhando Workflow ID: ${BOLD}${RUN_ID}${NC}"
   gh run watch "${RUN_ID}" -R cirobessa/kube-demo-2026 --exit-status
 
@@ -169,9 +181,18 @@ if [ "${EXEC_MODE}" = "ci" ]; then
   gh auth switch -u cirodasilvaj 2>/dev/null || true
   gh workflow run terraform.yml -R cirodasilvaj/backstage-infra -f action=apply
 
-  echo -e "${YELLOW}Aguardando início do workflow do Backstage...${NC}"
-  sleep 10
-  RUN_ID=$(gh run list -R cirodasilvaj/backstage-infra -W terraform.yml -L 1 --json databaseId -q '.[0].databaseId')
+  echo -e "${YELLOW}Aguardando início do novo workflow do Backstage...${NC}"
+  RUN_ID=""
+  for i in $(seq 1 12); do
+    sleep 5
+    RUN_ID=$(gh run list -R cirodasilvaj/backstage-infra -W terraform.yml -L 1 --json databaseId,status -q '.[] | select(.status != "completed") | .databaseId' 2>/dev/null || true)
+    if [ -n "${RUN_ID}" ]; then
+      break
+    fi
+  done
+  if [ -z "${RUN_ID}" ]; then
+    RUN_ID=$(gh run list -R cirodasilvaj/backstage-infra -W terraform.yml -L 1 --json databaseId -q '.[0].databaseId')
+  fi
   echo -e "Acompanhando Workflow ID: ${BOLD}${RUN_ID}${NC}"
   gh run watch "${RUN_ID}" -R cirodasilvaj/backstage-infra --exit-status
 
