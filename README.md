@@ -120,11 +120,11 @@ When an AWS sandbox account expires, follow the deterministic 6-phase sequence b
 | 🔒 [**`docs/ROUTE53-ACM-HTTPS-CONFIGURATION.md`**](file:///home/ciro/kube-demo-2026/docs/ROUTE53-ACM-HTTPS-CONFIGURATION.md) | **Route 53 + Certificado ACM (HTTPS):** Emissão automática de certificado wildcard SSL/TLS no AWS ACM e associação aos Load Balancers (Porta 443). |
 | 🚀 [**`DEPLOY-ORDER-RUNBOOK.md`**](file:///home/ciro/kube-demo-2026/DEPLOY-ORDER-RUNBOOK.md) | Zero-to-production execution manual for recreating all 4 tiers from blank AWS credentials in < 20 min. |
 | 🛡️ [**`docs/DISASTER-RECOVERY.md`**](file:///home/ciro/kube-demo-2026/docs/DISASTER-RECOVERY.md) | Business continuity protocols, RTO/RPO metrics, database rehydration, and S3 state locking. |
-| 📊 [**`docs/OBSERVABILITY-AND-MONITORING.md`**](file:///home/ciro/kube-demo-2026/docs/OBSERVABILITY-AND-MONITORING.md) | Prometheus metrics scraping, Fluentd structured logging, Loki aggregation, and Grafana dashboards. |
+| 📊 [**`docs/OBSERVABILITY-AND-MONITORING.md`**](file:///home/ciro/kube-demo-2026/docs/OBSERVABILITY-AND-MONITORING.md) | **Observabilidade & Telemetria:** Estratégia de mínimo de dashboards (Backstage como Single Pane of Glass + Grafana como motor de renderização), Dashboard-as-Code via Scaffolder, métricas Prometheus, logs Fluentd/Loki e credenciais no Parameter Store. |
 | 🔑 [**`docs/IAM-AND-IDENTITY.md`**](file:///home/ciro/kube-demo-2026/docs/IAM-AND-IDENTITY.md) | Samba 4 Active Directory Multi-DC (in EKS VPC), FreeRADIUS MFA, and Keycloak SSO federation. |
 | ⚙️ [**`docs/MICROSERVICES-AND-CICD.md`**](file:///home/ciro/kube-demo-2026/docs/MICROSERVICES-AND-CICD.md) | Polyglot apps (.NET 8 & Python 3.12), SonarQube SAST quality gates, and Backstage catalog integration. |
 | 📑 [**`docs/PRESENTATION.md`**](file:///home/ciro/kube-demo-2026/docs/PRESENTATION.md) | Architecture slide deck transcript in Markdown format with speaker notes and diagrams. |
-| 🚀 [**`docs/DEVELOPER-ONBOARDING-ROADMAP.md`**](file:///home/ciro/kube-demo-2026/docs/DEVELOPER-ONBOARDING-ROADMAP.md) | **Roadmap & Guia do Desenvolvedor (Backstage):** Instruções completas para DEV criar novas apps via Scaffolder Templates ou integrar apps existentes, padrões de logs JSON, métricas `/metrics`, probes e SonarQube. |
+| 🚀 [**`docs/DEVELOPER-ONBOARDING-ROADMAP.md`**](file:///home/ciro/kube-demo-2026/docs/DEVELOPER-ONBOARDING-ROADMAP.md) | **Roadmap & Guia do Desenvolvedor (Backstage):** Instruções completas para DEV criar novas apps via Scaffolder Templates (Dashboard-as-Code automático no Grafana com Golden Signals) ou integrar apps existentes, padrões de logs JSON, `/metrics`, probes e SonarQube. |
 
 ---
 

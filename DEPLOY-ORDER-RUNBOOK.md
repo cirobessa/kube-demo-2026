@@ -21,9 +21,18 @@ flowchart TD
 
 ## Phase 0 — Before the Old Account Expires (Optional) & Updating AWS Credentials
 
-1. **(Optional — If the previous AWS account is still active)** Download the latest live PostgreSQL SQL dump from the Backstage endpoint:
+1. **(Optional — If the previous AWS account is still active)** Download the latest live PostgreSQL SQL dump from the Backstage endpoint using credentials from AWS Parameter Store:
    ```bash
-   curl -u admin:Backstage@2026 \
+   # Retrieve the Backstage password securely from AWS Parameter Store:
+   # Parameter Name: /kube-demo-2026/platform/credentials
+   # Parameter ARN:  arn:aws:ssm:us-east-1:<AWS_ACCOUNT_ID>:parameter/kube-demo-2026/platform/credentials
+   BACKSTAGE_PASS=$(aws ssm get-parameter \
+     --name "/kube-demo-2026/platform/credentials" \
+     --with-decryption \
+     --query "Parameter.Value" \
+     --output text | jq -r '.credentials.backstage.password')
+
+   curl -u "admin:${BACKSTAGE_PASS}" \
      -o /home/ciro/backstate-infra/db/schema.sql \
      http://<BACKSTAGE_ELB_HOSTNAME>/backstage-rds-dump.sql
    ```

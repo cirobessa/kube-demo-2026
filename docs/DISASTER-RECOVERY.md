@@ -50,9 +50,18 @@ flowchart LR
 
 If the active AWS account contains newly registered Backstage catalog entities, custom templates, or documentation that you wish to preserve into the next account rotation:
 
-1. **Download Live SQL Dump:**
+1. **Download Live SQL Dump (Using AWS Parameter Store Credentials):**
    ```bash
-   curl -u admin:Backstage@2026 \
+   # Retrieve the Backstage password securely from AWS SSM Parameter Store:
+   # Parameter Name: /kube-demo-2026/platform/credentials
+   # Parameter ARN:  arn:aws:ssm:us-east-1:<AWS_ACCOUNT_ID>:parameter/kube-demo-2026/platform/credentials
+   BACKSTAGE_PASS=$(aws ssm get-parameter \
+     --name "/kube-demo-2026/platform/credentials" \
+     --with-decryption \
+     --query "Parameter.Value" \
+     --output text | jq -r '.credentials.backstage.password')
+
+   curl -u "admin:${BACKSTAGE_PASS}" \
      -o /home/ciro/backstate-infra/db/schema.sql \
      http://backstage.<lab-id>.realhandsonlabs.net/backstage-rds-dump.sql
    ```
