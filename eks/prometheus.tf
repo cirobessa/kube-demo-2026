@@ -35,6 +35,10 @@ resource "helm_release" "prometheus" {
     name  = "alertmanager.persistentVolume.enabled"
     value = "false"
   }
+  set {
+    name  = "alertmanager.persistence.enabled"
+    value = "false"
+  }
 
   depends_on = [
     aws_eks_node_group.this,
