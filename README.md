@@ -124,6 +124,7 @@ When an AWS sandbox account expires, follow the deterministic 6-phase sequence b
 | 🔑 [**`docs/IAM-AND-IDENTITY.md`**](file:///home/ciro/kube-demo-2026/docs/IAM-AND-IDENTITY.md) | Samba 4 Active Directory Multi-DC (in EKS VPC), FreeRADIUS MFA, and Keycloak SSO federation. |
 | ⚙️ [**`docs/MICROSERVICES-AND-CICD.md`**](file:///home/ciro/kube-demo-2026/docs/MICROSERVICES-AND-CICD.md) | Polyglot apps (.NET 8 & Python 3.12), SonarQube SAST quality gates, and Backstage catalog integration. |
 | 📑 [**`docs/PRESENTATION.md`**](file:///home/ciro/kube-demo-2026/docs/PRESENTATION.md) | Architecture slide deck transcript in Markdown format with speaker notes and diagrams. |
+| 🚀 [**`docs/DEVELOPER-ONBOARDING-ROADMAP.md`**](file:///home/ciro/kube-demo-2026/docs/DEVELOPER-ONBOARDING-ROADMAP.md) | **Roadmap & Guia do Desenvolvedor (Backstage):** Instruções completas para DEV criar novas apps via Scaffolder Templates ou integrar apps existentes, padrões de logs JSON, métricas `/metrics`, probes e SonarQube. |
 
 ---
 
