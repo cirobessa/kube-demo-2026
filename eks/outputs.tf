@@ -45,3 +45,22 @@ output "acm_certificate_arn" {
   description = "Issued and validated ACM Wildcard SSL/TLS certificate ARN for HTTPS Load Balancers"
   value       = local.has_lab_zone ? aws_acm_certificate.lab_cert[0].arn : ""
 }
+
+# -----------------------------------------------------------------------------
+# AWS Systems Manager (SSM) Parameter Store Outputs (Single Source of Truth)
+# -----------------------------------------------------------------------------
+output "ssm_cluster_info_parameter_name" {
+  description = "AWS Parameter Store resource containing EKS cluster foundation info"
+  value       = aws_ssm_parameter.cluster_info.name
+}
+
+output "ssm_platform_credentials_parameter_name" {
+  description = "Unified AWS SSM Parameter Store resource holding all platform endpoints and credentials"
+  value       = "/kube-demo-2026/platform/credentials"
+}
+
+output "how_to_retrieve_credentials_command" {
+  description = "AWS CLI command to retrieve all platform endpoints, URLs, and credentials securely"
+  value       = "aws ssm get-parameter --name '/kube-demo-2026/platform/credentials' --with-decryption --query 'Parameter.Value' --output text | jq ."
+}
+

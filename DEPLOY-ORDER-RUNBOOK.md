@@ -143,24 +143,62 @@ gh workflow run build.yml -R cirodasilvaj/apps-demo-2026
 
 ---
 
-## Phase 6 — End-to-End Verification & Service Directory
+## Phase 6 — End-to-End Verification & AWS Parameter Store (Single Source of Truth)
 
-### 6.1 Complete Endpoint Directory
-Once all 5 phases conclude, test the live services using your sandbox `<lab-id>`:
+### 6.1 Centralized Credentials & Endpoints in AWS Parameter Store
+Por motivos de conformidade e segurança da informação, **nenhuma credencial ou senha é exposta em texto plano nos logs dos deploys**. Em vez disso, todos os endpoints, URLs, certificados e credenciais são consolidados e criptografados em um único recurso no **AWS Systems Manager (SSM) Parameter Store**:
 
-| Service | Dynamic Route 53 URL | Default Credentials | Description |
-|---|---|---|---|
-| **Backstage IDP** | `http://backstage.<lab-id>.realhandsonlabs.net` | OAuth / SSO or Guest | Developer Portal, Software Catalog & TechDocs |
-| **ArgoCD** | `http://argocd.<lab-id>.realhandsonlabs.net` | `admin` / *(fetched from secret)* | GitOps Application Controller UI |
-| **SonarQube** | `http://sonarqube.<lab-id>.realhandsonlabs.net` | `admin` / `admin` | SAST Code Quality & Security Scanner |
-| **Grafana** | `http://grafana.<lab-id>.realhandsonlabs.net` | `admin` / `admin` | Metrics Dashboards & Cluster Telemetry |
-| **Keycloak SSO** | `http://sso.<lab-id>.realhandsonlabs.net` | `admin` / *(see secrets)* | Central IAM Broker (OIDC & SAML 2.0) |
-| **Samba 4 AD** | `ldap://ad.<lab-id>.realhandsonlabs.net:389` | `Administrator` | Multi-DC Active Directory Directory Service |
-| **Python API** | `http://python.<lab-id>.realhandsonlabs.net` | Public | Python 3.12 Flask Microservice (`/metrics`) |
-| **.NET API** | `http://dotnet.<lab-id>.realhandsonlabs.net` | Public | .NET 8 C# Enterprise Microservice (`/healthz`) |
+* **Nome do Recurso no Parameter Store:** `/kube-demo-2026/platform/credentials`
+* **Tipo:** `SecureString` (Criptografia AWS KMS)
+* **Comando AWS CLI para resgatar todos os endpoints e senhas:**
+  ```bash
+  aws ssm get-parameter \
+    --name "/kube-demo-2026/platform/credentials" \
+    --with-decryption \
+    --query "Parameter.Value" \
+    --output text | jq .
+  ```
 
-### 6.2 Smoke Test Commands
-Run this verification snippet locally to confirm that all services are online:
+### 6.2 Estrutura do Payload Armazenado no Parameter Store
+
+```json
+{
+  "metadata": {
+    "project": "kube-demo-2026",
+    "environment": "sandbox",
+    "aws_account_id": "234824776462",
+    "route53_domain": "234824776462.realhandsonlabs.net",
+    "acm_cert_arn": "arn:aws:acm:us-east-1:234824776462:certificate/xxxx"
+  },
+  "endpoints_https": {
+    "backstage": "https://backstage.234824776462.realhandsonlabs.net",
+    "argocd": "https://argocd.234824776462.realhandsonlabs.net",
+    "sonarqube": "https://sonarqube.234824776462.realhandsonlabs.net",
+    "grafana": "https://grafana.234824776462.realhandsonlabs.net",
+    "keycloak": "https://sso.234824776462.realhandsonlabs.net",
+    "python_app": "https://python.234824776462.realhandsonlabs.net",
+    "dotnet_app": "https://dotnet.234824776462.realhandsonlabs.net"
+  },
+  "endpoints_internal": {
+    "samba_ad_ldap": "ldap://ad.234824776462.realhandsonlabs.net:389",
+    "freeradius_mfa": "radius.234824776462.realhandsonlabs.net:1812",
+    "prometheus_k8s": "http://prometheus-server.monitoring.svc.cluster.local:80",
+    "rds_postgresql": "postgres-backstage.xxxx.us-east-1.rds.amazonaws.com:5432"
+  },
+  "credentials": {
+    "backstage": { "username": "admin", "password": "..." },
+    "sonarqube": { "username": "admin", "password": "..." },
+    "grafana": { "username": "admin", "password": "..." },
+    "argocd": { "username": "admin", "get_password_command": "..." },
+    "samba_active_directory": { "realm": "lab.internal", "username": "Administrator", "password": "..." },
+    "keycloak_sso": { "username": "admin", "password": "..." },
+    "freeradius_mfa": { "shared_secret": "..." }
+  }
+}
+```
+
+### 6.3 Smoke Test dos Endpoints HTTPS
+Execute este script para verificar a saúde dos endpoints sem expor senhas:
 
 ```bash
 LAB_ID="YOUR_LAB_ID" # e.g. 829104
