@@ -1,45 +1,45 @@
-# Guia de Ordenação de Deploys do Zero (Nova Conta AWS 7 Horas)
+# Zero-to-Production Deployment Order Runbook (New 7-Hour AWS Account)
 
-Este documento descreve a **ordem exata de execução** para recriar toda a arquitetura do zero quando a conta de demonstração da AWS expirar, garantindo que todas as dependências de rede (VPC/Sub-redes), cluster EKS, banco RDS PostgreSQL, identidade (Samba 4 AD + FreeRADIUS MFA + Keycloak), qualidade/segurança (SonarQube), observabilidade (Prometheus + Grafana) e aplicações subam sem conflitos.
+This document describes the **exact execution order** required to recreate the entire architecture from scratch when the 7-hour AWS sandbox account expires. Following this sequence guarantees that all network dependencies (VPC/Subnets), the EKS cluster, the RDS PostgreSQL database, the identity stack (Samba 4 AD + FreeRADIUS MFA + Keycloak), code quality/security (SonarQube), observability (Prometheus + Grafana), and sample applications come up cleanly without conflicts.
 
 ---
 
-## Visão Geral da Ordem de Provisionamento
+## Provisioning Order Overview
 
 ```mermaid
 flowchart TD
-    S0["Fase 0: Preparação (Backup Dump SQL + Atualizar AWS Secrets no GitHub)"] --> S1
-    S1["Fase 1: Infraestrutura Base e Cluster EKS (cirobessa/kube-demo-2026)"] --> S2
-    S2["Fase 2: Kubeconfig Local (aws eks update-kubeconfig)"] --> S3
-    S3["Fase 3: Plataforma DevEx, Banco RDS, SonarQube, Grafana e ArgoCD (cirodasilvaj/backstage-infra)"] --> S4
-    S4["Fase 4: IAM / Active Directory Samba 4 + FreeRADIUS MFA + Keycloak na VPC do EKS (cirodasilvaj/samba-ad-keycloak)"] --> S5
-    S5["Fase 5: Apps Demo Python & .NET C# + Pipeline QA/SonarQube (cirodasilvaj/apps-demo-2026)"]
+    S0["Phase 0: Preparation (Optional SQL Dump Backup + Update AWS Secrets in GitHub)"] --> S1
+    S1["Phase 1: Base Infrastructure, EKS Cluster & Prometheus (cirobessa/kube-demo-2026)"] --> S2
+    S2["Phase 2: Local Kubeconfig Setup (aws eks update-kubeconfig)"] --> S3
+    S3["Phase 3: DevEx Platform, RDS, ArgoCD, Backstage, SonarQube & Grafana (cirodasilvaj/backstage-infra)"] --> S4
+    S4["Phase 4: IAM / Active Directory Samba 4 + FreeRADIUS MFA + Keycloak in EKS VPC (cirodasilvaj/samba-ad-keycloak)"] --> S5
+    S5["Phase 5: Demo Web Apps (Python & .NET C#) + QA & SonarQube CI/CD Pipeline (cirodasilvaj/apps-demo-2026)"]
 ```
 
 ---
 
-## Fase 0 — Antes da Conta Antiga Expirar (Opcional) e Atualização de Credenciais AWS
+## Phase 0 — Before the Old Account Expires (Optional) & Updating AWS Credentials
 
-1. **(Se a conta anterior ainda estiver ativa)** Baixar o dump SQL atualizado do RDS PostgreSQL pelo endpoint do Backstage:
+1. **(Optional — If the previous AWS account is still active)** Download the latest live PostgreSQL SQL dump from the Backstage endpoint:
    ```bash
    curl -u admin:Backstage@2026 \
      -o /home/ciro/backstate-infra/db/schema.sql \
      http://<BACKSTAGE_ELB_HOSTNAME>/backstage-rds-dump.sql
    ```
 
-2. **Atualizar as credenciais da nova conta AWS** (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION=us-east-1`) localmente e nos Secrets dos repositórios GitHub:
+2. **Update the new AWS account credentials** (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION=us-east-1`) locally and in the GitHub Actions Secrets of the repositories:
    ```bash
-   export AWS_ACCESS_KEY_ID="SEU_NOVO_ACCESS_KEY"
-   export AWS_SECRET_ACCESS_KEY="SEU_NOVO_SECRET_KEY"
+   export AWS_ACCESS_KEY_ID="YOUR_NEW_ACCESS_KEY_ID"
+   export AWS_SECRET_ACCESS_KEY="YOUR_NEW_SECRET_ACCESS_KEY"
    export AWS_REGION="us-east-1"
 
-   # 1. Atualizar no repositório do Cluster EKS (conta cirobessa)
+   # 1. Update secrets in the EKS Cluster repository (cirobessa account)
    gh auth switch -u cirobessa
    gh secret set AWS_ACCESS_KEY_ID -b "$AWS_ACCESS_KEY_ID" -R cirobessa/kube-demo-2026
    gh secret set AWS_SECRET_ACCESS_KEY -b "$AWS_SECRET_ACCESS_KEY" -R cirobessa/kube-demo-2026
    gh secret set AWS_REGION -b "$AWS_REGION" -R cirobessa/kube-demo-2026
 
-   # 2. Atualizar nos repositórios da Plataforma e IAM (conta cirodasilvaj)
+   # 2. Update secrets in the Platform and IAM repositories (cirodasilvaj account)
    gh auth switch -u cirodasilvaj
    for repo in cirodasilvaj/backstage-infra cirodasilvaj/samba-ad-keycloak; do
      gh secret set AWS_ACCESS_KEY_ID -b "$AWS_ACCESS_KEY_ID" -R "$repo"
@@ -50,7 +50,7 @@ flowchart TD
 
 ---
 
-## Fase 1 — Infraestrutura Base: VPC, Sub-redes, Cluster EKS e Prometheus (`cirobessa/kube-demo-2026`)
+## Phase 1 — Base Infrastructure: VPC, Subnets, EKS Cluster, and Prometheus (`cirobessa/kube-demo-2026`)
 
 ```bash
 gh auth switch -u cirobessa
@@ -59,7 +59,7 @@ gh workflow run terraform.yml -R cirobessa/kube-demo-2026 -f action=apply
 
 ---
 
-## Fase 2 — Configurar o `kubectl` Local
+## Phase 2 — Configure Local `kubectl`
 
 ```bash
 aws eks update-kubeconfig --name kube-demo-eks --region us-east-1
@@ -68,7 +68,7 @@ kubectl get nodes
 
 ---
 
-## Fase 3 — Plataforma DevEx, Banco RDS, ArgoCD, SonarQube e Grafana (`cirodasilvaj/backstage-infra`)
+## Phase 3 — DevEx Platform, RDS Database, ArgoCD, SonarQube, and Grafana (`cirodasilvaj/backstage-infra`)
 
 ```bash
 gh auth switch -u cirodasilvaj
@@ -77,7 +77,7 @@ gh workflow run terraform.yml -R cirodasilvaj/backstage-infra -f action=apply
 
 ---
 
-## Fase 4 — Active Directory (Samba 4 Multi-DC), FreeRADIUS MFA e Keycloak (`cirodasilvaj/samba-ad-keycloak`)
+## Phase 4 — Active Directory (Samba 4 Multi-DC), FreeRADIUS MFA, and Keycloak (`cirodasilvaj/samba-ad-keycloak`)
 
 ```bash
 gh auth switch -u cirodasilvaj
@@ -86,7 +86,7 @@ gh workflow run deploy.yml -R cirodasilvaj/samba-ad-keycloak -f action=apply
 
 ---
 
-## Fase 5 — Aplicações Web Demo (Python & .NET C#) e Pipeline CI/CD com SonarQube (`cirodasilvaj/apps-demo-2026`)
+## Phase 5 — Demo Web Applications (Python & .NET C#) and QA/SonarQube CI/CD Pipeline (`cirodasilvaj/apps-demo-2026`)
 
 ```bash
 gh auth switch -u cirodasilvaj
