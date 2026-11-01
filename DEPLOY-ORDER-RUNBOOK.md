@@ -17,6 +17,14 @@ flowchart TD
     S6["Phase 6: End-to-End Verification, Smoke Tests & Service Directory"]
 ```
 
+> [!TIP]
+> **Automação One-Click Disponível:**
+> Você pode executar todo o provisionamento de ponta a ponta com um único comando executando o script:
+> ```bash
+> ./scripts/redeploy-all.sh
+> ```
+> O script solicita as credenciais da nova conta AWS, sincroniza os secrets no GitHub, executa os pipelines na ordem correta e entrega o sumário final do AWS Parameter Store com todas as URLs e senhas.
+
 ---
 
 ## Phase 0 — Before the Old Account Expires (Optional) & Updating AWS Credentials

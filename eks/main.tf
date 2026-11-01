@@ -76,8 +76,8 @@ resource "aws_eks_node_group" "this" {
   depends_on     = [aws_iam_role_policy_attachment.eks_node_policy, aws_nat_gateway.this]
 
   tags = {
-    Name                                           = "${var.cluster_name}-nodes"
-    "k8s.io/cluster-autoscaler/enabled"            = "true"
+    Name                                            = "${var.cluster_name}-nodes"
+    "k8s.io/cluster-autoscaler/enabled"             = "true"
     "k8s.io/cluster-autoscaler/${var.cluster_name}" = "owned"
   }
 }

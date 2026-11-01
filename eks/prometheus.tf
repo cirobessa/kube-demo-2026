@@ -2,16 +2,16 @@ resource "kubernetes_namespace" "monitoring" {
   metadata {
     name = "monitoring"
     labels = {
-      name                         = "monitoring"
+      name                           = "monitoring"
       "app.kubernetes.io/name"       = "monitoring"
       "app.kubernetes.io/part-of"    = var.project_name
       "app.kubernetes.io/managed-by" = "terraform"
       "app.kubernetes.io/created-by" = "github-actions"
-      environment                  = var.environment
-      cost-center                  = var.cost_center
-      cloud-provider               = var.cloud_provider
-      source-project               = var.project_name
-      owner                        = var.owner
+      environment                    = var.environment
+      cost-center                    = var.cost_center
+      cloud-provider                 = var.cloud_provider
+      source-project                 = var.project_name
+      owner                          = var.owner
     }
   }
   depends_on = [aws_eks_node_group.this]
