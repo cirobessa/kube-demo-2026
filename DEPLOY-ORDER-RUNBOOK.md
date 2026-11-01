@@ -75,6 +75,15 @@ gh auth switch -u cirodasilvaj
 gh workflow run terraform.yml -R cirodasilvaj/backstage-infra -f action=apply
 ```
 
+> **Note on Route 53 DNS Delegation:**
+> Phase 3 automatically auto-discovers the ephemeral lab's Route 53 public hosted zone (`*realhandsonlabs.net`) via `terraform/dns.tf` and delegates friendly CNAME records:
+> - `http://backstage.<lab-id>.realhandsonlabs.net`
+> - `http://grafana.<lab-id>.realhandsonlabs.net`
+> - `http://argocd.<lab-id>.realhandsonlabs.net`
+> - `http://sonarqube.<lab-id>.realhandsonlabs.net`
+> All URLs and credentials are automatically printed in the GitHub Actions Step Summary.
+
+
 ---
 
 ## Phase 4 — Active Directory (Samba 4 Multi-DC), FreeRADIUS MFA, and Keycloak (`cirodasilvaj/samba-ad-keycloak`)
