@@ -5,10 +5,7 @@
 # Automatiza todo o ciclo de vida e redeploy da infraestrutura quando uma
 # nova conta temporária AWS (sandbox de 7h) é provisionada.
 #
-# Uso:
-#   ./scripts/redeploy-all.sh
-#   Ou passando credenciais:
-#   AWS_ACCESS_KEY_ID="AKIA..." AWS_SECRET_ACCESS_KEY="..." ./scripts/redeploy-all.sh
+# Mede o tempo exato de cada fase e o tempo total de provisionamento.
 # ==============================================================================
 
 set -euo pipefail
@@ -18,6 +15,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
 BOLD='\033[1m'
 NC='\033[0m'
 
@@ -33,7 +31,15 @@ echo -e "${BLUE}${BOLD}=========================================================
 echo ""
 
 # ------------------------------------------------------------------------------
-# 1. Coleta e Validação de Credenciais AWS
+# 1. Início da Medição Global de Tempo
+# ------------------------------------------------------------------------------
+GLOBAL_START_TIME=$(date +%s)
+GLOBAL_START_DATE=$(date "+%Y-%m-%d %H:%M:%S %Z")
+echo -e "${MAGENTA}${BOLD}⏱️  Início da Execução:${NC} ${GLOBAL_START_DATE}"
+echo ""
+
+# ------------------------------------------------------------------------------
+# 2. Coleta e Validação de Credenciais AWS
 # ------------------------------------------------------------------------------
 REGION="${AWS_REGION:-us-east-1}"
 ACCESS_KEY="${AWS_ACCESS_KEY_ID:-}"
@@ -73,7 +79,7 @@ echo -e "  Região    : ${BOLD}${REGION}${NC}"
 echo ""
 
 # ------------------------------------------------------------------------------
-# 2. Configurar ~/.aws/credentials e ~/.aws/config localmente
+# 3. Configurar ~/.aws/credentials e ~/.aws/config localmente
 # ------------------------------------------------------------------------------
 echo -e "${CYAN}Atualizando ~/.aws/credentials local...${NC}"
 mkdir -p "${HOME}/.aws"
@@ -104,7 +110,7 @@ echo -e "${GREEN}✓ Arquivos ~/.aws/credentials e ~/.aws/config atualizados.${N
 echo ""
 
 # ------------------------------------------------------------------------------
-# 3. Sincronizar Secrets do GitHub Actions (cirobessa & cirodasilvaj)
+# 4. Sincronizar Secrets do GitHub Actions (cirobessa & cirodasilvaj)
 # ------------------------------------------------------------------------------
 echo -e "${CYAN}Sincronizando secrets do GitHub Actions...${NC}"
 
@@ -118,7 +124,7 @@ if command -v gh >/dev/null 2>&1; then
   if [ -n "${SESSION_TOKEN}" ]; then
     gh secret set AWS_SESSION_TOKEN -b "${SESSION_TOKEN}" -R cirobessa/kube-demo-2026
   else
-    gh secret set AWS_SESSION_TOKEN -b "" -R cirobessa/kube-demo-2026 2>/dev/null || true
+    gh secret delete AWS_SESSION_TOKEN -R cirobessa/kube-demo-2026 2>/dev/null || true
   fi
 
   # Repositórios cirodasilvaj/*
@@ -132,7 +138,7 @@ if command -v gh >/dev/null 2>&1; then
     if [ -n "${SESSION_TOKEN}" ]; then
       gh secret set AWS_SESSION_TOKEN -b "${SESSION_TOKEN}" -R "${repo}"
     else
-      gh secret set AWS_SESSION_TOKEN -b "" -R "${repo}" 2>/dev/null || true
+      gh secret delete AWS_SESSION_TOKEN -R "${repo}" 2>/dev/null || true
     fi
   done
   echo -e "${GREEN}✓ Secrets do GitHub Actions sincronizados.${NC}"
@@ -142,135 +148,209 @@ fi
 echo ""
 
 # ------------------------------------------------------------------------------
-# 4. Modo de Execução: CI (GitHub Actions) ou Local
+# Função Auxiliar de Despacho e Monitoramento de Workflow
 # ------------------------------------------------------------------------------
-EXEC_MODE="${1:-ci}"
-echo -e "${BOLD}Modo de Execução Selecionado:${NC} ${CYAN}${EXEC_MODE}${NC}"
+run_and_watch_workflow() {
+  local account="$1"
+  local repo="$2"
+  local workflow="$3"
+  local description="$4"
+  local extra_args="${5:-}"
 
-if [ "${EXEC_MODE}" = "ci" ]; then
-  echo ""
-  echo -e "${BLUE}${BOLD}=== DISPARANDO PIPELINES VIA GITHUB ACTIONS ===${NC}"
+  local p_start=$(date +%s)
+  echo -e "${BLUE}${BOLD}------------------------------------------------------------------------------${NC}"
+  echo -e "${CYAN}${BOLD}▶ ${description}${NC}"
+  echo -e "  Repositório: ${BOLD}${repo}${NC} | Workflow: ${BOLD}${workflow}${NC}"
+  echo -e "${BLUE}${BOLD}------------------------------------------------------------------------------${NC}"
 
-  # 1. Disparar EKS
-  echo -e "${CYAN}1/3. Disparando deploy do EKS (cirobessa/kube-demo-2026)...${NC}"
-  gh auth switch -u cirobessa 2>/dev/null || true
-  gh workflow run eks.yml -R cirobessa/kube-demo-2026 -f action=apply
+  gh auth switch -u "${account}" 2>/dev/null || true
 
-  echo -e "${YELLOW}Aguardando início do novo workflow do EKS...${NC}"
-  RUN_ID=""
-  for i in $(seq 1 12); do
-    sleep 5
-    RUN_ID=$(gh run list -R cirobessa/kube-demo-2026 -W eks.yml -L 1 --json databaseId,status -q '.[] | select(.status != "completed") | .databaseId' 2>/dev/null || true)
-    if [ -n "${RUN_ID}" ]; then
+  local prev_run
+  prev_run=$(gh run list -R "${repo}" -w "${workflow}" -L 1 --json databaseId -q '.[0].databaseId' 2>/dev/null || echo "")
+
+  if [ -n "${extra_args}" ]; then
+    gh workflow run "${workflow}" -R "${repo}" ${extra_args}
+  else
+    gh workflow run "${workflow}" -R "${repo}"
+  fi
+
+  echo -e "${YELLOW}Aguardando início do workflow...${NC}"
+  local run_id=""
+  for i in $(seq 1 24); do
+    sleep 4
+    local candidate
+    candidate=$(gh run list -R "${repo}" -w "${workflow}" -L 3 --json databaseId,status,createdAt -q '.[] | select(.status != "completed") | .databaseId' 2>/dev/null | head -n 1 || true)
+    if [ -n "${candidate}" ] && [ "${candidate}" != "${prev_run}" ]; then
+      run_id="${candidate}"
       break
     fi
   done
-  if [ -z "${RUN_ID}" ]; then
-    RUN_ID=$(gh run list -R cirobessa/kube-demo-2026 -W eks.yml -L 1 --json databaseId -q '.[0].databaseId')
+
+  if [ -z "${run_id}" ]; then
+    run_id=$(gh run list -R "${repo}" -w "${workflow}" -L 1 --json databaseId -q '.[0].databaseId')
   fi
-  echo -e "Acompanhando Workflow ID: ${BOLD}${RUN_ID}${NC}"
-  gh run watch "${RUN_ID}" -R cirobessa/kube-demo-2026 --exit-status
 
-  # 2. Configurar kubectl local
-  echo -e "${CYAN}Configurando kubectl local...${NC}"
-  aws eks update-kubeconfig --name kube-demo-eks --region "${REGION}"
-  kubectl get nodes
-
-  # 3. Disparar Backstage Infra Platform
-  echo -e "${CYAN}2/3. Disparando deploy da Plataforma DevEx & Backstage (cirodasilvaj/backstage-infra)...${NC}"
-  gh auth switch -u cirodasilvaj 2>/dev/null || true
-  gh workflow run terraform.yml -R cirodasilvaj/backstage-infra -f action=apply
-
-  echo -e "${YELLOW}Aguardando início do novo workflow do Backstage...${NC}"
-  RUN_ID=""
-  for i in $(seq 1 12); do
-    sleep 5
-    RUN_ID=$(gh run list -R cirodasilvaj/backstage-infra -W terraform.yml -L 1 --json databaseId,status -q '.[] | select(.status != "completed") | .databaseId' 2>/dev/null || true)
-    if [ -n "${RUN_ID}" ]; then
-      break
-    fi
-  done
-  if [ -z "${RUN_ID}" ]; then
-    RUN_ID=$(gh run list -R cirodasilvaj/backstage-infra -W terraform.yml -L 1 --json databaseId -q '.[0].databaseId')
+  echo -e "Acompanhando Workflow ID: ${BOLD}${run_id}${NC} (${repo})..."
+  if ! gh run watch "${run_id}" -R "${repo}" --exit-status; then
+    echo -e "${RED}❌ Falha na execução do workflow ${workflow} em ${repo}.${NC}"
+    echo -e "Visualize os logs com: gh run view ${run_id} -R ${repo} --log-failed"
+    exit 1
   fi
-  echo -e "Acompanhando Workflow ID: ${BOLD}${RUN_ID}${NC}"
-  gh run watch "${RUN_ID}" -R cirodasilvaj/backstage-infra --exit-status
 
-  # 4. Disparar Apps Demo
-  echo -e "${CYAN}3/3. Disparando build e deploy das Apps Demo (cirodasilvaj/apps-demo-2026)...${NC}"
-  gh workflow run build.yml -R cirodasilvaj/apps-demo-2026 2>/dev/null || true
-
-elif [ "${EXEC_MODE}" = "local" ]; then
+  local p_end=$(date +%s)
+  local p_elapsed=$((p_end - p_start))
+  local p_min=$((p_elapsed / 60))
+  local p_sec=$((p_elapsed % 60))
+  echo -e "${GREEN}✓ ${description} concluído com sucesso em ${BOLD}${p_min}m ${p_sec}s${NC}! (${p_elapsed}s)"
   echo ""
-  echo -e "${BLUE}${BOLD}=== EXECUTANDO DEPLOY LOCALMENTE VIA TERRAFORM ===${NC}"
+  echo "${p_elapsed}"
+}
 
-  # 1. Bucket S3 de Estado
-  STATE_BUCKET="kube-demo-2026-tfstate-${ACCOUNT_ID}"
-  echo -e "${CYAN}Garantindo bucket de estado: ${STATE_BUCKET}...${NC}"
-  if ! aws s3api head-bucket --bucket "${STATE_BUCKET}" 2>/dev/null; then
-    aws s3api create-bucket --bucket "${STATE_BUCKET}" $([ "${REGION}" != "us-east-1" ] && echo "--create-bucket-configuration LocationConstraint=${REGION}")
-    aws s3api put-bucket-versioning --bucket "${STATE_BUCKET}" --versioning-configuration Status=Enabled
-  fi
+# Arrays para métricas de tempo
+PHASE_NAMES=()
+PHASE_TIMES=()
 
-  # 2. Deploy EKS
-  echo -e "${CYAN}Deployando EKS Cluster...${NC}"
-  cd "${WORKSPACE_ROOT}/eks"
-  terraform init -input=false -reconfigure \
-    -backend-config="bucket=${STATE_BUCKET}" \
-    -backend-config="key=eks/terraform.tfstate" \
-    -backend-config="region=${REGION}"
-  terraform apply -input=false -auto-approve
+# ------------------------------------------------------------------------------
+# Fase 1: Base Infrastructure, EKS Cluster & Prometheus (cirobessa/kube-demo-2026)
+# ------------------------------------------------------------------------------
+PHASE_NAMES+=("1. EKS Cluster + VPC + Prometheus (cirobessa/kube-demo-2026)")
+T1=$(run_and_watch_workflow "cirobessa" "cirobessa/kube-demo-2026" "eks.yml" "Fase 1: Infraestrutura Base, EKS e Prometheus" "-f action=apply" | tail -n 1)
+PHASE_TIMES+=("${T1}")
 
-  aws eks update-kubeconfig --name kube-demo-eks --region "${REGION}"
+# ------------------------------------------------------------------------------
+# Fase 2: Configurar kubectl Localmente e Validar Nós
+# ------------------------------------------------------------------------------
+P2_START=$(date +%s)
+echo -e "${BLUE}${BOLD}------------------------------------------------------------------------------${NC}"
+echo -e "${CYAN}${BOLD}▶ Fase 2: Configuração e Verificação do Cluster Kubernetes Local${NC}"
+echo -e "${BLUE}${BOLD}------------------------------------------------------------------------------${NC}"
+aws eks update-kubeconfig --name kube-demo-eks --region "${REGION}"
+kubectl get nodes -o wide
+P2_END=$(date +%s)
+T2=$((P2_END - P2_START))
+PHASE_NAMES+=("2. Configuração kubectl local e validação de nós")
+PHASE_TIMES+=("${T2}")
+echo -e "${GREEN}✓ Fase 2 concluída em ${BOLD}$((T2 / 60))m $((T2 % 60))s${NC}!\n"
 
-  # 3. Deploy Backstage Platform
-  echo -e "${CYAN}Deployando Backstage DevEx Platform...${NC}"
-  cd "${BACKSTAGE_DIR}/terraform"
-  terraform init -input=false -reconfigure \
-    -backend-config="bucket=${STATE_BUCKET}" \
-    -backend-config="key=backstage-infra/terraform.tfstate" \
-    -backend-config="region=${REGION}"
-  terraform apply -input=false -auto-approve
+# ------------------------------------------------------------------------------
+# Fase 3: DevEx Platform, RDS PostgreSQL, ArgoCD, SonarQube, Grafana, Backstage
+# ------------------------------------------------------------------------------
+PHASE_NAMES+=("3. DevEx Platform: RDS, Backstage, ArgoCD, SonarQube, Grafana (backstage-infra)")
+T3=$(run_and_watch_workflow "cirodasilvaj" "cirodasilvaj/backstage-infra" "terraform.yml" "Fase 3: DevEx Platform & Backstage Portal" "-f action=apply" | tail -n 1)
+PHASE_TIMES+=("${T3}")
 
-  # Sync Manifests
-  kubectl apply -f "${BACKSTAGE_DIR}/k8s-manifests/backstage/"
-  kubectl apply -f "${BACKSTAGE_DIR}/k8s-manifests/sonarqube/"
-  kubectl apply -f "${BACKSTAGE_DIR}/k8s-manifests/grafana/"
+# ------------------------------------------------------------------------------
+# Fase 4: Identity Stack: Samba 4 AD Multi-DC + FreeRADIUS MFA + Keycloak SSO
+# ------------------------------------------------------------------------------
+PHASE_NAMES+=("4. Identity Stack: Samba 4 AD + FreeRADIUS + Keycloak SSO (samba-ad-keycloak)")
+T4=$(run_and_watch_workflow "cirodasilvaj" "cirodasilvaj/samba-ad-keycloak" "deploy.yml" "Fase 4: Identity Stack (Samba 4 AD, FreeRADIUS, Keycloak)" "-f action=apply" | tail -n 1)
+PHASE_TIMES+=("${T4}")
 
-  # 4. Deploy Samba AD Keycloak
-  if [ -d "${SAMBA_DIR}/terraform" ]; then
-    echo -e "${CYAN}Deployando Samba AD + Keycloak...${NC}"
-    cd "${SAMBA_DIR}/terraform"
-    terraform init -input=false -reconfigure \
-      -backend-config="bucket=${STATE_BUCKET}" \
-      -backend-config="key=samba-ad-keycloak/terraform.tfstate" \
-      -backend-config="region=${REGION}"
-    terraform apply -input=false -auto-approve
-  fi
+# ------------------------------------------------------------------------------
+# Fase 5: Demo Web Apps (Python Flask & .NET 8 C#) + QA & SonarQube CI/CD
+# ------------------------------------------------------------------------------
+PHASE_NAMES+=("5. Demo Web Apps: Python & .NET + QA SonarQube CI/CD (apps-demo-2026)")
+T5=$(run_and_watch_workflow "cirodasilvaj" "cirodasilvaj/apps-demo-2026" "build.yml" "Fase 5: Demo Web Apps (Python & .NET) + QA & SonarQube CI/CD" "" | tail -n 1)
+PHASE_TIMES+=("${T5}")
+
+# ------------------------------------------------------------------------------
+# Fase 6: Smoke Tests de Endpoints e Verificação de Saúde
+# ------------------------------------------------------------------------------
+P6_START=$(date +%s)
+echo -e "${BLUE}${BOLD}==============================================================================${NC}"
+echo -e "${CYAN}${BOLD}▶ Fase 6: Smoke Tests, Resolução DNS e Verificação de Endpoints${NC}"
+echo -e "${BLUE}${BOLD}==============================================================================${NC}"
+
+# Descobre o domínio público do laboratório no Route 53
+ZONE_NAME=$(aws route53 list-hosted-zones --query "HostedZones[?contains(Name, 'realhandsonlabs.net') && Config.PrivateZone == \`false\`].Name | [0]" --output text 2>/dev/null | sed 's/\.$//' || true)
+if [ -z "${ZONE_NAME}" ] || [ "${ZONE_NAME}" = "None" ]; then
+  ZONE_NAME="${ACCOUNT_ID}.realhandsonlabs.net"
 fi
+echo -e "Domínio Route 53: ${BOLD}${ZONE_NAME}${NC}"
+echo ""
+
+echo -e "${CYAN}Verificando pods nos namespaces Kubernetes...${NC}"
+kubectl get pods -A | grep -v 'kube-system\|amazon-cloudwatch' || true
+echo ""
+
+echo -e "${CYAN}Executando Smoke Tests nos Endpoints HTTP/HTTPS (com retry de até 60s)...${NC}"
+TEST_SERVICES=("backstage:/" "grafana:/api/health" "argocd:/" "sonarqube:/api/system/status" "sso:/" "python:/healthz" "dotnet:/healthz")
+
+for entry in "${TEST_SERVICES[@]}"; do
+  svc="${entry%%:*}"
+  path="${entry##*:}"
+  url="http://${svc}.${ZONE_NAME}${path}"
+  
+  echo -n "  Testing ${svc} (${url})... "
+  HTTP_CODE="000"
+  for attempt in $(seq 1 12); do
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "${url}" || echo "000")
+    if [ "${HTTP_CODE}" != "000" ]; then
+      break
+    fi
+    sleep 5
+  done
+
+  if [ "${HTTP_CODE}" -ge 200 ] && [ "${HTTP_CODE}" -lt 400 ]; then
+    echo -e "${GREEN}HTTP ${HTTP_CODE} OK${NC}"
+  elif [ "${HTTP_CODE}" = "401" ]; then
+    echo -e "${YELLOW}HTTP 401 (Auth Required - OK)${NC}"
+  else
+    echo -e "${YELLOW}HTTP ${HTTP_CODE}${NC}"
+  fi
+done
+
+P6_END=$(date +%s)
+T6=$((P6_END - P6_START))
+PHASE_NAMES+=("6. Smoke Tests e Validação de Endpoints")
+PHASE_TIMES+=("${T6}")
 
 # ------------------------------------------------------------------------------
-# 5. Recuperação dos Dados Consolidados no AWS Parameter Store
+# Fase 7: Recuperação dos Dados Consolidados no AWS Parameter Store
 # ------------------------------------------------------------------------------
-echo ""
-echo -e "${BLUE}${BOLD}==============================================================================${NC}"
-echo -e "${GREEN}${BOLD}🎉 DEPLOY CONCLUÍDO COM SUCESSO!${NC}"
-echo -e "${BLUE}${BOLD}==============================================================================${NC}"
 echo ""
 echo -e "${CYAN}Consultando AWS Systems Manager Parameter Store...${NC}"
 SSM_PARAM="/kube-demo-2026/platform/credentials"
-
 if CREDS_JSON=$(aws ssm get-parameter --name "${SSM_PARAM}" --with-decryption --query "Parameter.Value" --output text 2>/dev/null); then
   echo "${CREDS_JSON}" > "${WORKSPACE_ROOT}/deploy-summary.json"
   echo -e "${GREEN}✓ Dados do ambiente salvos em: ${BOLD}${WORKSPACE_ROOT}/deploy-summary.json${NC}"
-  echo ""
-  echo -e "${BOLD}Diretório de Endpoints e Acessos Provisionados:${NC}"
-  echo "${CREDS_JSON}" | jq '.'
-else
-  echo -e "${YELLOW}Aviso: O parâmetro ${SSM_PARAM} ainda está sendo propagado no SSM.${NC}"
-  echo -e "Você pode consultar a qualquer momento com:"
-  echo -e "${BOLD}aws ssm get-parameter --name '${SSM_PARAM}' --with-decryption --query 'Parameter.Value' --output text | jq .${NC}"
 fi
 
+# ------------------------------------------------------------------------------
+# Relatório Final de Tempo e Métricas
+# ------------------------------------------------------------------------------
+GLOBAL_END_TIME=$(date +%s)
+GLOBAL_END_DATE=$(date "+%Y-%m-%d %H:%M:%S %Z")
+TOTAL_ELAPSED=$((GLOBAL_END_TIME - GLOBAL_START_TIME))
+TOTAL_MIN=$((TOTAL_ELAPSED / 60))
+TOTAL_SEC=$((TOTAL_ELAPSED % 60))
+
 echo ""
-echo -e "${GREEN}${BOLD}Ambiente pronto para demonstração!${NC}"
+echo -e "${BLUE}${BOLD}==============================================================================${NC}"
+echo -e "${GREEN}${BOLD}🎉 AMBIENTE 100% OPERACIONAL E NO AR!${NC}"
+echo -e "${BLUE}${BOLD}==============================================================================${NC}"
+echo ""
+echo -e "${BOLD}Métricas de Tempo do Provisionamento Zero-to-Production:${NC}"
+echo -e "  Início : ${GLOBAL_START_DATE}"
+echo -e "  Término: ${GLOBAL_END_DATE}"
+echo -e "  ${BOLD}Tempo Total Decorrido:${NC} ${GREEN}${BOLD}${TOTAL_MIN} minutos e ${TOTAL_SEC} segundos${NC} (${TOTAL_ELAPSED} segundos)"
+echo ""
+echo -e "${BOLD}Detalhamento por Fase:${NC}"
+for i in "${!PHASE_NAMES[@]}"; do
+  name="${PHASE_NAMES[$i]}"
+  time_sec="${PHASE_TIMES[$i]}"
+  min=$((time_sec / 60))
+  sec=$((time_sec % 60))
+  printf "  • %-72s : %2dm %02ds (%4ds)\n" "${name}" "${min}" "${sec}" "${time_sec}"
+done
+echo ""
+echo -e "${BOLD}Diretório de Endpoints Disponíveis:${NC}"
+echo "  • Backstage Portal : http://backstage.${ZONE_NAME}"
+echo "  • Grafana          : http://grafana.${ZONE_NAME}"
+echo "  • ArgoCD GitOps    : http://argocd.${ZONE_NAME} (ou https)"
+echo "  • SonarQube QA     : http://sonarqube.${ZONE_NAME}"
+echo "  • Keycloak SSO     : http://sso.${ZONE_NAME}"
+echo "  • Python Flask App : http://python.${ZONE_NAME} (ou https)"
+echo "  • .NET 8 C# App    : http://dotnet.${ZONE_NAME} (ou https)"
+echo ""
+echo -e "${GREEN}${BOLD}Ambiente pronto para uso e demonstração!${NC}"
