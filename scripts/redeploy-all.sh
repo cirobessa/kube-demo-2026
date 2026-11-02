@@ -42,19 +42,24 @@ echo ""
 # 2. Coleta e Validação de Credenciais AWS
 # ------------------------------------------------------------------------------
 REGION="${AWS_REGION:-us-east-1}"
-ACCESS_KEY="${AWS_ACCESS_KEY_ID:-}"
-SECRET_KEY="${AWS_SECRET_ACCESS_KEY:-}"
-SESSION_TOKEN="${AWS_SESSION_TOKEN:-}"
+ACCESS_KEY="${AWS_ACCESS_KEY_ID:-$(aws configure get aws_access_key_id 2>/dev/null || echo "")}"
+SECRET_KEY="${AWS_SECRET_ACCESS_KEY:-$(aws configure get aws_secret_access_key 2>/dev/null || echo "")}"
+SESSION_TOKEN="${AWS_SESSION_TOKEN:-$(aws configure get aws_session_token 2>/dev/null || echo "")}"
 
 if [ -z "${ACCESS_KEY}" ] || [ -z "${SECRET_KEY}" ]; then
-  echo -e "${YELLOW}Credenciais AWS não encontradas nas variáveis de ambiente.${NC}"
-  echo -e "Por favor, informe as credenciais da nova conta AWS do laboratório:"
-  echo ""
-  read -r -p "AWS Access Key ID: " ACCESS_KEY
-  read -r -s -p "AWS Secret Access Key: " SECRET_KEY
-  echo ""
-  read -r -s -p "AWS Session Token (pressione ENTER se não houver): " SESSION_TOKEN
-  echo ""
+  if [ -t 0 ]; then
+    echo -e "${YELLOW}Credenciais AWS não encontradas nas variáveis de ambiente ou ~/.aws/credentials.${NC}"
+    echo -e "Por favor, informe as credenciais da nova conta AWS do laboratório:"
+    echo ""
+    read -r -p "AWS Access Key ID: " ACCESS_KEY
+    read -r -s -p "AWS Secret Access Key: " SECRET_KEY
+    echo ""
+    read -r -s -p "AWS Session Token (pressione ENTER se não houver): " SESSION_TOKEN
+    echo ""
+  else
+    echo -e "${RED}❌ ERRO: Credenciais AWS não encontradas e sessão não interativa.${NC}"
+    exit 1
+  fi
 fi
 
 export AWS_ACCESS_KEY_ID="${ACCESS_KEY}"
