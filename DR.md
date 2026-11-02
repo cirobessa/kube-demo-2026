@@ -11,5 +11,6 @@
 ## Detailed Playbooks & References
 
 - 📘 **Complete Disaster Recovery Guide:** See [`docs/DISASTER-RECOVERY.md`](file:///home/ciro/kube-demo-2026/docs/DISASTER-RECOVERY.md) for full backup endpoints, state locking, and restore protocols.
+- 📦 **Backstage Backup & Restore Runbook:** See [`docs/BACKSTAGE-BACKUP-RESTORE-PROCEDURE.md`](file:///home/ciro/kube-demo-2026/docs/BACKSTAGE-BACKUP-RESTORE-PROCEDURE.md) for automated database dumps, manifests exports, and disaster recovery.
 - 🚀 **Zero-to-Production Runbook:** Follow [`DEPLOY-ORDER-RUNBOOK.md`](file:///home/ciro/kube-demo-2026/DEPLOY-ORDER-RUNBOOK.md) for the deterministic 6-phase recreation order.
 - 🌐 **Route 53 Dynamic DNS:** See [`docs/ROUTE53-DYNAMIC-DNS.md`](file:///home/ciro/kube-demo-2026/docs/ROUTE53-DYNAMIC-DNS.md) for automated CNAME discovery and delegation across rotating accounts.
