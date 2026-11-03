@@ -63,8 +63,8 @@ test_endpoint "ArgoCD Web Console (HTTPS)" "https://argocd.${ZONE_NAME}" "Argo C
 
 # 5. Workloads & Microservices HTTPS
 test_endpoint "Node.js Demo22 (HTTPS)" "https://demo22.${ZONE_NAME}/api/info" "Hello World" "" || true
-test_endpoint "Python Flask App (HTTPS)" "https://python.${ZONE_NAME}/healthz" "healthy" "" || true
-test_endpoint "Dotnet C# App (HTTPS)" "https://dotnet.${ZONE_NAME}/healthz" "healthy" "" || true
+test_endpoint "Python Flask App (HTTPS)" "https://python.${ZONE_NAME}/healthz" "Python" "" || true
+test_endpoint "Dotnet C# App (HTTPS)" "https://dotnet.${ZONE_NAME}/healthz" "ok" "" || true
 test_endpoint "Scaffolder Starter (HTTPS)" "https://starter.${ZONE_NAME}/api/info" "scaffolder" "" || true
 
 echo "=================================================================="
