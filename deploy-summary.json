@@ -1,1 +1,65 @@
-{"credentials":{"argocd":{"get_password_command":"kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d","username":"admin"},"backstage":{"db_dump_url":"https://backstage.992382723408.realhandsonlabs.net/backstage-rds-dump.sql","password":"Backstage@2026","username":"admin"},"freeradius_mfa":{"shared_secret":"RadiusSecret2026!"},"grafana":{"password":"Grafana@2026","username":"admin"},"keycloak_sso":{"password":"KeycloakAdmin2026!","username":"admin"},"rds_postgresql":{"database":"backstage_plugin_catalog","host":"backstage-postgres.crsmq0o8cfin.us-east-1.rds.amazonaws.com","password":"BackstageRds2026!","port":5432,"username":"backstage"},"samba_active_directory":{"password":"SuaSenhaForte123!","realm":"lab.internal","username":"Administrator"},"sonarqube":{"password":"Sonar@2026","username":"admin"}},"endpoints_https":{"argocd":"https://argocd.992382723408.realhandsonlabs.net","backstage":"https://backstage.992382723408.realhandsonlabs.net","dotnet_app":"https://dotnet.992382723408.realhandsonlabs.net","grafana":"https://grafana.992382723408.realhandsonlabs.net","keycloak":"https://sso.992382723408.realhandsonlabs.net","python_app":"https://python.992382723408.realhandsonlabs.net","sonarqube":"https://sonarqube.992382723408.realhandsonlabs.net"},"endpoints_internal":{"freeradius_mfa":"radius.992382723408.realhandsonlabs.net:1812","loki_logs":"http://loki.monitoring.svc.cluster.local:3100","prometheus_k8s":"http://prometheus-server.monitoring.svc.cluster.local:80","rds_postgresql":"backstage-postgres.crsmq0o8cfin.us-east-1.rds.amazonaws.com:5432","samba_ad_ldap":"ldap://ad.992382723408.realhandsonlabs.net:389"},"metadata":{"acm_cert_arn":"arn:aws:acm:us-east-1:992382723408:certificate/d2bf33b4-d3d6-4801-8519-5fec47f4d1e3","aws_account_id":"992382723408","environment":"sandbox","project":"kube-demo-2026","route53_domain":"992382723408.realhandsonlabs.net","route53_zone_id":"Z02733191R49UUUWAPGH9","single_store_ref":"/kube-demo-2026/platform/credentials"}}
+{
+  "credentials": {
+    "argocd": {
+      "get_password_command": "[PROTECTED_IN_LOCAL_VAULT]",
+      "username": "admin"
+    },
+    "backstage": {
+      "db_dump_url": "https://backstage.992382723408.realhandsonlabs.net/backstage-rds-dump.sql",
+      "password": "[PROTECTED_IN_LOCAL_VAULT]",
+      "username": "admin"
+    },
+    "freeradius_mfa": {
+      "shared_secret": "[PROTECTED_IN_LOCAL_VAULT]"
+    },
+    "grafana": {
+      "password": "[PROTECTED_IN_LOCAL_VAULT]",
+      "username": "admin"
+    },
+    "keycloak_sso": {
+      "password": "[PROTECTED_IN_LOCAL_VAULT]",
+      "username": "admin"
+    },
+    "rds_postgresql": {
+      "database": "backstage_plugin_catalog",
+      "host": "backstage-postgres.crsmq0o8cfin.us-east-1.rds.amazonaws.com",
+      "password": "[PROTECTED_IN_LOCAL_VAULT]",
+      "port": 5432,
+      "username": "backstage"
+    },
+    "samba_active_directory": {
+      "password": "[PROTECTED_IN_LOCAL_VAULT]",
+      "realm": "lab.internal",
+      "username": "Administrator"
+    },
+    "sonarqube": {
+      "password": "[PROTECTED_IN_LOCAL_VAULT]",
+      "username": "admin"
+    }
+  },
+  "endpoints_https": {
+    "argocd": "https://argocd.992382723408.realhandsonlabs.net",
+    "backstage": "https://backstage.992382723408.realhandsonlabs.net",
+    "dotnet_app": "https://dotnet.992382723408.realhandsonlabs.net",
+    "grafana": "https://grafana.992382723408.realhandsonlabs.net",
+    "keycloak": "https://sso.992382723408.realhandsonlabs.net",
+    "python_app": "https://python.992382723408.realhandsonlabs.net",
+    "sonarqube": "https://sonarqube.992382723408.realhandsonlabs.net"
+  },
+  "endpoints_internal": {
+    "freeradius_mfa": "radius.992382723408.realhandsonlabs.net:1812",
+    "loki_logs": "http://loki.monitoring.svc.cluster.local:3100",
+    "prometheus_k8s": "http://prometheus-server.monitoring.svc.cluster.local:80",
+    "rds_postgresql": "backstage-postgres.crsmq0o8cfin.us-east-1.rds.amazonaws.com:5432",
+    "samba_ad_ldap": "ldap://ad.992382723408.realhandsonlabs.net:389"
+  },
+  "metadata": {
+    "acm_cert_arn": "arn:aws:acm:us-east-1:992382723408:certificate/d2bf33b4-d3d6-4801-8519-5fec47f4d1e3",
+    "aws_account_id": "992382723408",
+    "environment": "sandbox",
+    "project": "kube-demo-2026",
+    "route53_domain": "992382723408.realhandsonlabs.net",
+    "route53_zone_id": "Z02733191R49UUUWAPGH9",
+    "single_store_ref": "/kube-demo-2026/platform/credentials"
+  }
+}
