@@ -42,6 +42,16 @@ resource "aws_eks_cluster" "this" {
   }
 }
 
+resource "aws_security_group_rule" "cluster_vpc_ingress" {
+  description       = "Allow all internal VPC traffic to cluster and kubelet"
+  type              = "ingress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  cidr_blocks       = [var.vpc_cidr]
+  security_group_id = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
+}
+
 resource "aws_iam_role" "eks_cluster" {
   name = "${var.cluster_name}-cluster-role"
   assume_role_policy = jsonencode({
