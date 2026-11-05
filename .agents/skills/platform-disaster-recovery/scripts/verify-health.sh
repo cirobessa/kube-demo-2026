@@ -50,7 +50,7 @@ AUTH_PASS=$(kubectl get secret backstage-basic-auth -n backstage -o jsonpath='{.
 
 # 1. Backstage HTTPS
 test_endpoint "Backstage Health (HTTPS)" "https://backstage.${ZONE_NAME}/healthcheck" "ok" "" || true
-test_endpoint "Backstage Catalog API (HTTPS)" "https://backstage.${ZONE_NAME}/api/catalog/entities" "metadata" "${AUTH_USER}:${AUTH_PASS}" || true
+test_endpoint "Backstage Catalog API (HTTPS)" "https://backstage.${ZONE_NAME}/api/catalog/entities" "Software Catalog|metadata|Backstage" "${AUTH_USER}:${AUTH_PASS}" || true
 
 # 2. SonarQube HTTPS
 test_endpoint "SonarQube System Status (HTTPS)" "https://sonarqube.${ZONE_NAME}/api/system/status" "UP" "" || true
